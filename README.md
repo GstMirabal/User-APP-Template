@@ -1,95 +1,170 @@
-# User-APP-Template: Professional Django Identity Engine
-
 <div align="center">
 
-[![License][license-shield]][license-url]
-[![Framework][django-shield]][django-url]
-[![API][drf-shield]][drf-url]
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
 </div>
 
-## Overview
-User-APP-Template is a high-performance, security-first boilerplate for building modern Django applications with heavy focus on **Identity and Access Management (IAM)**. Extracted and distilled from production environments, this template provides a robust `users` application featuring:
+<a name="readme-top"></a>
 
-- **JWT Stateless Authentication**: Secure token management with rotation and blacklisting.
-- **Enhanced MFA Architecture**: Built-in support for TOTP (Google Authenticator) and verify-at-login flows.
-- **Zero-Trust Encryption**: Application-level encryption for sensitive user data (e.g., API keys, secrets).
-- **Brute Force Protection**: Native integration with `django-axes` for account lockout policies.
-- **Production-Ready Logging**: Structured JSON logging with ISO-8601 timestamps in UTC.
+<h3 align="center">User-APP-Template</h3>
 
----
+<p align="center">
+  Security-first Identity and Access Management (IAM) engine for professional Django applications.
+<br /><br />
+<a href="https://github.com/GstMirabal/User-APP-Template"><strong>Explore the docs »</strong></a>
+<br />
+·
+<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+·
+<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+</p>
 
-## 🏗 Physical Topology
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul><li><a href="#built-with">Built With</a></li></ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation & Configuration</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
-```text
-.
-├── .agents/                 # Universal-Agents Constitutional Framework
-├── backend/
-│   ├── apps/
-│   │   ├── core/            # Shared logic, validators, and health checks
-│   │   └── users/           # Core Security Engine (The User App)
-│   ├── config/              # Django settings and routing (Toml-based config)
-│   ├── scripts/             # Infrastructure management scripts
-│   └── utils/               # App-level encryption and secret generation
-├── Makefile                 # Common developer routines
-├── docker-compose.yml       # Local infrastructure (PostgreSQL)
-├── project_stack.md         # Architecture cache for AI agents
-└── requirements.txt         # Dependency manifest
-```
+## About The Project
 
----
+User-APP-Template is a high-performance, security-first boilerplate for building modern Django applications with a heavy focus on **Identity and Access Management (IAM)**. Extracted and distilled from production environments, this template provides a robust `users` application.
 
-## 🚀 Getting Started
+**Key Features:**
+*   **JWT Stateless Authentication**: Secure token management with rotation and blacklisting.
+*   **Enhanced MFA Architecture**: Built-in support for TOTP (Google Authenticator) and verify-at-login flows.
+*   **Zero-Trust Encryption**: Application-level encryption for sensitive user data (e.g., API keys, secrets).
+*   **Brute Force Protection**: Native integration with `django-axes` for account lockout policies.
+*   **Production-Ready Logging**: Structured JSON logging with ISO-8601 timestamps in UTC.
 
-### 1. Requirements
-- Python 3.13+
-- Docker & Docker Compose
-- [Optional] `uv` for lightning-fast dependency management
+### Built With
 
-### 2. Environment Setup
-Copy the configuration template and generate your security keys:
+* ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+* ![Django](https://img.shields.io/badge/django-%23092e20.svg?style=for-the-badge&logo=django&logoColor=white)
+* ![DRF](https://img.shields.io/badge/django-rest-ff1709?style=for-the-badge&logo=django&logoColor=white)
+* ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+* ![PostgreSQL](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Getting Started
+
+### Prerequisites
+
+*   **Python 3.13+**: Core language.
+*   **Docker & Docker Compose**: Infrastructure orchestration.
+*   **Git**: Version control.
+
+### Installation & Configuration
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/GstMirabal/User-APP-Template.git
+   cd User-APP-Template
+   ```
+
+2. **Environment Setup**
+   Copy the configuration template and generate your security keys:
+   ```bash
+   cp .env.example .env
+   cp config.toml.example config.toml
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+4. **Run Infrastructure and Migrations**
+   ```bash
+   make db-up
+   make migrate
+   make dev
+   ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Usage
+
+The `Makefile` serves as the primary gateway for common tasks:
 
 ```bash
-cp .env.example .env
-cp config.toml.example config.toml
-# Fill in the keys in config.toml
-```
-
-### 3. Usage via Makefile
-The `Makefile` serves as the primary entry point for managing the lifecycle of the template:
-
-```bash
-# Spin up infrastructure
-make db-up
-
-# Apply initial migrations
-make migrate
-
-# Launch Development Server
+# Launch development server
 make dev
 
-# Run Quality Control
-make lint
+# Run full test suite
 make test
+
+# Code quality check (Ruff)
+make lint
 ```
 
----
+**API Documentation:** Once running, access the Interactive Swagger UI at `http://localhost:8000/api/docs/swagger/`.
 
-## 🛡 Security Protocol
-This repository follows the strict rules dictated by the [Universal-Agents Framework](.agents/global_user_rules.md):
-1. **Strict Typing**: All core logic must use Python Type Hinting.
-2. **Google Documentation**: Mandatory use of Google Style Docstrings.
-3. **Linter Validation**: `ruff` check and format are mandatory before commits.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
----
+## Contributing
 
-## 📄 License
-Distributed under the MIT License. See `LICENSE` for more information.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-<!-- MARKDOWN LINKS -->
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contact
+
+Gustavo Mirabal Suarez - gst.mirabal@gmail.com
+
+- LinkedIn: [@Gustavo-Mirabal](https://www.linkedin.com/in/gstmirabal/)
+- GitHub: [@GstMirabal](https://github.com/GstMirabal)
+- Twitter: [@GstMirabal](https://x.com/gst_mirabal)
+
+Project Link: [https://github.com/GstMirabal/User-APP-Template](https://github.com/GstMirabal/User-APP-Template)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[contributors-url]: https://github.com/GstMirabal/User-APP-Template/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[forks-url]: https://github.com/GstMirabal/User-APP-Template/network/members
+[stars-shield]: https://img.shields.io/github/stars/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[stars-url]: https://github.com/GstMirabal/User-APP-Template/stargazers
+[issues-shield]: https://img.shields.io/github/issues/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[issues-url]: https://github.com/GstMirabal/User-APP-Template/issues
 [license-shield]: https://img.shields.io/github/license/GstMirabal/User-APP-Template.svg?style=for-the-badge
 [license-url]: https://github.com/GstMirabal/User-APP-Template/blob/master/LICENSE.txt
-[django-shield]: https://img.shields.io/badge/django-%23092e20.svg?style=for-the-badge&logo=django&logoColor=white
-[django-url]: https://www.djangoproject.com/
-[drf-shield]: https://img.shields.io/badge/DRF-ff1709?style=for-the-badge&logo=django&logoColor=white
-[drf-url]: https://www.django-rest-framework.org/
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/gstmirabal/
