@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.agent_state/
+*.log
+logs/
+
+# Django
+local_settings.py
+db.sqlite3
+mediafiles/
+staticfiles/
+
+# Configuration
+config.toml
+
+# Databases & Docker
+.docker-db-data/
+postgres_data/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Pytest / Quality
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+*.json-report.json
+schema.json
