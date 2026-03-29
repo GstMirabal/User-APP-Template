@@ -27,7 +27,7 @@ def generate_postgres_password():
 
 def main():
     print("=" * 60)
-    print("🔐  CRYPTOBOT SECRET GENERATOR  🔐")
+    print("🔐  USER-APP-TEMPLATE SECRET GENERATOR  🔐")
     print("=" * 60)
     print("\nCopy these values into your 'config.toml' or '.env' file.\n")
 

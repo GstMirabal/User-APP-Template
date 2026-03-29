@@ -26,7 +26,7 @@ class Address(models.Model):
 
 
 class User(AbstractUser):
-    """Custom User model for CryptoBot."""
+    """Custom User model for User-APP-Template."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(_("Email address"), unique=True)
     username = models.CharField(

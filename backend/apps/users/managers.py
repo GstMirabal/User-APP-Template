@@ -84,7 +84,7 @@ class SoftDeleteQuerySet(models.QuerySet):
 
                 # 1. Technical Identity
                 anon_id: str = f"anon_{user.id}"
-                anon_email: str = f"{anon_id}@cryptobot.internal"
+                anon_email: str = f"{anon_id}@user-app-template.internal"
 
                 user.is_anonymized = True
                 user.email = anon_email

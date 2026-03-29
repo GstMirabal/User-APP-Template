@@ -41,7 +41,7 @@ POSTGRES_USER = "postgres"
 POSTGRES_PASSWORD = "password"
 POSTGRES_HOST = "localhost"
 POSTGRES_PORT = "5432"
-POSTGRES_DB = "cryptobot"
+POSTGRES_DB = "user-app-template"
 
 [email_settings]
 EMAIL_HOST = "localhost"

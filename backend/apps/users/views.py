@@ -79,7 +79,7 @@ class UserViewSet(GenericViewSet):
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request: Request) -> Response:
 
-        """Register a new Cryptobot user account."""
+        """Register a new User-APP-Template user account."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

@@ -11,17 +11,17 @@
 
 <a name="readme-top"></a>
 
-<h3 align="center">CryptoBot Users Application</h3>
+<h3 align="center">User-APP-Template Users Application</h3>
 
 <p align="center">
-  Security-first Identity and Access Management (IAM) for the CryptoBot Ecosystem.
+  Security-first Identity and Access Management (IAM) for the User-APP-Template Ecosystem.
 <br /><br />
-<a href="https://github.com/GstMirabal/Cryptobot"><strong>Explore the docs »</strong></a>
+<a href="https://github.com/GstMirabal/User-APP-Template"><strong>Explore the docs »</strong></a>
 <br />
 ·
-<a href="https://github.com/GstMirabal/Cryptobot/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
 ·
-<a href="https://github.com/GstMirabal/Cryptobot/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
 </p>
 
 <!-- TABLE OF CONTENTS -->
@@ -51,7 +51,7 @@
 
 ## About The Project
 
-The `users` application is the core security engine of CryptoBot. It handles authentication, authorization, and the secure storage of sensitive exchange credentials using a "Zero-Knowledge" inspired architecture where API keys are encrypted at rest and never exposed back through the API.
+The `users` application is the core security engine of User-APP-Template. It handles authentication, authorization, and the secure storage of sensitive exchange credentials using a "Zero-Knowledge" inspired architecture where API keys are encrypted at rest and never exposed back through the API.
 
 ### Built With
 
@@ -87,8 +87,8 @@ The `users` application is the core security engine of CryptoBot. It handles aut
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/GstMirabal/Cryptobot.git
-   cd Cryptobot
+   git clone https://github.com/GstMirabal/User-APP-Template.git
+   cd User-APP-Template
    ```
 
 2. **Environment Setup**
@@ -147,20 +147,20 @@ Gustavo Mirabal Suarez - gst.mirabal@gmail.com
 - LinkedIn: [@Gustavo-Mirabal](https://www.linkedin.com/in/gstmirabal/)
 - GitHub: [@GstMirabal](https://github.com/GstMirabal)
 
-Project Link: [https://github.com/GstMirabal/Cryptobot](https://github.com/GstMirabal/Cryptobot)
+Project Link: [https://github.com/GstMirabal/User-APP-Template](https://github.com/GstMirabal/User-APP-Template)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/Cryptobot.svg?style=for-the-badge
-[contributors-url]: https://github.com/GstMirabal/Cryptobot/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/GstMirabal/Cryptobot.svg?style=for-the-badge
-[forks-url]: https://github.com/GstMirabal/Cryptobot/network/members
-[stars-shield]: https://img.shields.io/github/stars/GstMirabal/Cryptobot.svg?style=for-the-badge
-[stars-url]: https://github.com/GstMirabal/Cryptobot/stargazers
-[issues-shield]: https://img.shields.io/github/issues/GstMirabal/Cryptobot.svg?style=for-the-badge
-[issues-url]: https://github.com/GstMirabal/Cryptobot/issues
-[license-shield]: https://img.shields.io/github/license/GstMirabal/Cryptobot.svg?style=for-the-badge
-[license-url]: https://github.com/GstMirabal/Cryptobot/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[contributors-url]: https://github.com/GstMirabal/User-APP-Template/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[forks-url]: https://github.com/GstMirabal/User-APP-Template/network/members
+[stars-shield]: https://img.shields.io/github/stars/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[stars-url]: https://github.com/GstMirabal/User-APP-Template/stargazers
+[issues-shield]: https://img.shields.io/github/issues/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[issues-url]: https://github.com/GstMirabal/User-APP-Template/issues
+[license-shield]: https://img.shields.io/github/license/GstMirabal/User-APP-Template.svg?style=for-the-badge
+[license-url]: https://github.com/GstMirabal/User-APP-Template/blob/main/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/gstmirabal/

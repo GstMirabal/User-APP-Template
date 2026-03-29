@@ -71,7 +71,7 @@ class VerificationService:
         user.secrets.save()
 
         otp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
-            name=user.email, issuer_name="CryptoBot"
+            name=user.email, issuer_name="User-APP-Template"
         )
         
         return {

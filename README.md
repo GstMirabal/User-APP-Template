@@ -139,7 +139,7 @@ Contributions are what make the open source community such an amazing place to l
 
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Licensed under the MIT License. See [LICENSE.txt](LICENSE.txt) for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -165,6 +165,6 @@ Project Link: [https://github.com/GstMirabal/User-APP-Template](https://github.c
 [issues-shield]: https://img.shields.io/github/issues/GstMirabal/User-APP-Template.svg?style=for-the-badge
 [issues-url]: https://github.com/GstMirabal/User-APP-Template/issues
 [license-shield]: https://img.shields.io/github/license/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[license-url]: https://github.com/GstMirabal/User-APP-Template/blob/master/LICENSE.txt
+[license-url]: https://github.com/GstMirabal/User-APP-Template/blob/main/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/gstmirabal/

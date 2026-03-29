@@ -17,7 +17,7 @@ class TestUserAPI:
         """Validate successful registration and automatic Profile/Secret creation."""
         url = reverse("users:user-register")
         data = {
-            "email": "tester@cryptobot.com",
+            "email": "tester@user-app-template.com",
             "username": "testerbot",
             "password": "StrongPassword123!",
             "password_confirm": "StrongPassword123!",
@@ -36,7 +36,7 @@ class TestUserAPI:
         """Validate failure if passwords do not match."""
         url = reverse("users:user-register")
         data = {
-            "email": "bad@cryptobot.com",
+            "email": "bad@user-app-template.com",
             "username": "baduser",
             "password": "StrongPassword123!",
             "password_confirm": "DifferentPassword123!",
@@ -50,18 +50,18 @@ class TestUserAPI:
         """Test full OTP flow: generation, mock send, and validation."""
         register_url = reverse("users:user-register")
         client.post(register_url, {
-            "email": "verify@cryptobot.com",
+            "email": "verify@user-app-template.com",
             "username": "verifyuser",
             "password": "StrongPassword123!",
             "password_confirm": "StrongPassword123!",
         })
         
-        user = User.objects.get(email="verify@cryptobot.com")
+        user = User.objects.get(email="verify@user-app-template.com")
         otp = user.secrets.api_key_binance_encrypted.split(":")[1]
         
         verify_url = reverse("users:user-verify")
         response = client.post(verify_url, {
-            "email": "verify@cryptobot.com",
+            "email": "verify@user-app-template.com",
             "code": otp
         })
         
@@ -72,7 +72,7 @@ class TestUserAPI:
     def test_sensitive_endpoints_require_verification_and_stepup(self, client):
         """Validate that secrets endpoints require verification and Step-Up."""
         user = User.objects.create_user(
-            email="secure@cryptobot.com",
+            email="secure@user-app-template.com",
             username="secure",
             password="StrongPassword123!",
             is_verified=True
@@ -88,7 +88,7 @@ class TestUserAPI:
         """Test the reauth flow to gain Step-Up access."""
         password = "StrongPassword123!"
         user = User.objects.create_user(
-            email="reauth@cryptobot.com",
+            email="reauth@user-app-template.com",
             username="reauth_user",
             password=password,
             is_verified=True
@@ -107,7 +107,7 @@ class TestUserAPI:
     def test_2fa_anti_replay(self, client):
         """Validate TOTP token anti-replay protection."""
         user = User.objects.create_user(
-            email="2fa_replay@cryptobot.com",
+            email="2fa_replay@user-app-template.com",
             username="2fa_user",
             password="StrongPassword123!",
             is_verified=True
