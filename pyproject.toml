@@ -1,0 +1,23 @@
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+exclude = ["venv", "migrations"]
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+mypy_path = "."
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = ["backend/scripts", "venv", "migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "SIM", "PTH", "TD", "ERA", "PL", "RUF"]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D203", "D213", "PLR2004", "TD002", "TD003", "PLC0415", "PLR0915"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

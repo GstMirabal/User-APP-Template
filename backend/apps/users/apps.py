@@ -7,8 +7,8 @@ class UsersConfig(AppConfig):
     Handles app initialization and signal registration.
     """
 
-    default_auto_field: str = 'django.db.models.BigAutoField'
-    name: str = 'apps.users'
+    default_auto_field: str = "django.db.models.BigAutoField"
+    name: str = "apps.users"
 
     def ready(self) -> None:
         """Executed when the application is ready.

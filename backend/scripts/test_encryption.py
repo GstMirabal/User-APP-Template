@@ -1,10 +1,10 @@
 import os
 import sys
+
 import django
-from django.conf import settings
 
 # Setup Django environment
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 # Mock settings for encryption if not set (for testing purposes only)
@@ -18,8 +18,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 def run_tests():
     # Create a temporary config.toml with necessary keys
-    import tempfile
     import shutil
+    import tempfile
 
     # Create a temp directory to act as BASE_DIR
     temp_dir = tempfile.mkdtemp()
@@ -53,32 +53,33 @@ EMAIL_HOST_PASSWORD = "password"
 [project_logging]
 PROJECT_LOGS_DIR = "logs"
 """
-        with open(os.path.join(temp_dir, 'config.toml'), 'w') as f:
+        with open(os.path.join(temp_dir, "config.toml"), "w") as f:
             f.write(config_content)
 
         # Set BASE_DIR to temp_dir so settings.py picks up our config.toml
-        os.environ['BASE_DIR'] = temp_dir
+        os.environ["BASE_DIR"] = temp_dir
 
         # Also ensure logs dir exists
-        os.makedirs(os.path.join(temp_dir, 'logs'), exist_ok=True)
+        os.makedirs(os.path.join(temp_dir, "logs"), exist_ok=True)
 
         # Inject keys for testing if missing (though config.toml should handle it now)
         # We need a valid fernet key for MASTER_KEY
         from cryptography.fernet import Fernet
+
         valid_master_key = Fernet.generate_key().decode()
 
         # Update config.toml with valid key
         config_content = config_content.replace(
             'MASTER_KEY = "mock-master-key-32-bytes-base64-encoded="',
-            f'MASTER_KEY = "{valid_master_key}"'
+            f'MASTER_KEY = "{valid_master_key}"',
         )
-        with open(os.path.join(temp_dir, 'config.toml'), 'w') as f:
+        with open(os.path.join(temp_dir, "config.toml"), "w") as f:
             f.write(config_content)
 
         django.setup()
 
-        from utils.encryption import encrypt_value, decrypt_value, generate_blind_index
         from apps.users.models import UserSecret
+        from utils.encryption import decrypt_value, encrypt_value, generate_blind_index
 
         print("--- Testing Utilities ---")
         original_text = "sensitive-data-123"
@@ -107,7 +108,7 @@ PROJECT_LOGS_DIR = "logs"
 
         # Test set_sensitive_data for DNI (has index)
         dni_value = "12345678Z"
-        secret.set_sensitive_data('dni', dni_value)
+        secret.set_sensitive_data("dni", dni_value)
 
         print(f"DNI Encrypted field: {secret.dni_encrypted}")
         print(f"DNI Index field: {secret.dni_index}")
@@ -117,7 +118,7 @@ PROJECT_LOGS_DIR = "logs"
         assert secret.dni_index == generate_blind_index(dni_value)
 
         # Test get_sensitive_data
-        retrieved_dni = secret.get_sensitive_data('dni')
+        retrieved_dni = secret.get_sensitive_data("dni")
         print(f"Retrieved DNI: {retrieved_dni}")
         assert retrieved_dni == dni_value
 
@@ -126,18 +127,17 @@ PROJECT_LOGS_DIR = "logs"
         # Let's verify set_sensitive_data handles this gracefully.
 
         secret_value = "my-super-secret"
-        secret.set_sensitive_data('api_secret_binance', secret_value)
+        secret.set_sensitive_data("api_secret_binance", secret_value)
         print(f"API Secret Encrypted: {secret.api_secret_binance_encrypted}")
 
         # Check that it didn't crash and set the value
         assert secret.api_secret_binance_encrypted is not None
-        assert decrypt_value(
-            secret.api_secret_binance_encrypted) == secret_value
+        assert decrypt_value(secret.api_secret_binance_encrypted) == secret_value
 
         # Verify no index was set (attribute shouldn't exist or should be untouched if we didn't define it)
         # In the model, api_secret_binance_index is NOT defined.
         # So hasattr check in set_sensitive_data should have returned False.
-        assert not hasattr(secret, 'api_secret_binance_index')
+        assert not hasattr(secret, "api_secret_binance_index")
 
         print("\nSUCCESS: All encryption tests passed!")
 

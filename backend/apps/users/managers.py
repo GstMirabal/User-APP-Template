@@ -37,8 +37,8 @@ class SoftDeleteQuerySet(models.QuerySet):
         now = timezone.now()
         with transaction.atomic():
             # Propagation to related models (Lazy loading to avoid circular imports)
-            UserProfile = apps.get_model('users', 'UserProfile')
-            UserSecret = apps.get_model('users', 'UserSecret')
+            UserProfile = apps.get_model("users", "UserProfile")
+            UserSecret = apps.get_model("users", "UserSecret")
 
             # Update satellite tables
             UserProfile.objects.filter(user__in=self).update(deleted_at=now)
@@ -59,13 +59,11 @@ class SoftDeleteQuerySet(models.QuerySet):
         restorable: QuerySet = self.filter(is_anonymized=False)
 
         with transaction.atomic():
-            UserProfile = apps.get_model('users', 'UserProfile')
-            UserSecret = apps.get_model('users', 'UserSecret')
+            UserProfile = apps.get_model("users", "UserProfile")
+            UserSecret = apps.get_model("users", "UserSecret")
 
-            UserProfile.objects.filter(
-                user__in=restorable).update(deleted_at=None)
-            UserSecret.objects.filter(
-                user__in=restorable).update(deleted_at=None)
+            UserProfile.objects.filter(user__in=restorable).update(deleted_at=None)
+            UserSecret.objects.filter(user__in=restorable).update(deleted_at=None)
 
             return restorable.update(deleted_at=None)
 
@@ -94,7 +92,7 @@ class SoftDeleteQuerySet(models.QuerySet):
                 user.set_unusable_password()
 
                 # 2. UserProfile cleanup
-                if hasattr(user, 'profile'):
+                if hasattr(user, "profile"):
                     profile = user.profile
                     profile.bio = "Anonymized Data"
                     profile.avatar = None
@@ -102,7 +100,7 @@ class SoftDeleteQuerySet(models.QuerySet):
                     profile.save()
 
                 # 3. UserSecret cleanup
-                if hasattr(user, 'secrets'):
+                if hasattr(user, "secrets"):
                     secrets = user.secrets
                     secrets.dni_encrypted = None
                     secrets.dni_index = None
@@ -128,41 +126,54 @@ class SoftDeleteQuerySet(models.QuerySet):
 
 class CustomUserManager(BaseUserManager.from_queryset(SoftDeleteQuerySet)):
     """Custom user manager supporting email login and soft deletion."""
+
     use_in_migrations = True
 
-    def _create_user(self, email: str, username: str, password: str | None, **extra_fields: Any) -> Any:
+    def _create_user(
+        self, email: str, username: str, password: str | None, **extra_fields: Any
+    ) -> Any:
         """Internal method to create and save a user. Satellite models are handled by signals."""
         if not email:
-            raise ValueError('The email must be set')
+            raise ValueError("The email must be set")
         if not username:
-            raise ValueError('The username must be set')
+            raise ValueError("The username must be set")
 
         email = self.normalize_email(email).lower()
-        
+
         with transaction.atomic():
             user = self.model(email=email, username=username, **extra_fields)
             user.set_password(password)
             user.save(using=self._db)
             return user
 
-
-
-    def create_user(self, email: str, username: str, password: str | None = None, **extra_fields: Any) -> Any:
+    def create_user(
+        self,
+        email: str,
+        username: str,
+        password: str | None = None,
+        **extra_fields: Any,
+    ) -> Any:
         """Creates a standard user."""
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, username, password, **extra_fields)
 
-    def create_superuser(self, email: str, username: str, password: str | None = None, **extra_fields: Any) -> Any:
+    def create_superuser(
+        self,
+        email: str,
+        username: str,
+        password: str | None = None,
+        **extra_fields: Any,
+    ) -> Any:
         """Creates a superuser with strict permission validation."""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
 
         return self._create_user(email, username, password, **extra_fields)
 

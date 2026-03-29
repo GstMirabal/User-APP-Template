@@ -1,12 +1,13 @@
 import secrets
 import string
+
 from cryptography.fernet import Fernet
 
 
 def generate_django_secret_key():
     """Generates a 50-character random string suitable for DJANGO_SECRET_KEY."""
-    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-    return ''.join(secrets.choice(chars) for i in range(50))
+    chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
+    return "".join(secrets.choice(chars) for i in range(50))
 
 
 def generate_master_key():
@@ -22,7 +23,7 @@ def generate_encryption_pepper():
 def generate_postgres_password():
     """Generates a secure random password."""
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for i in range(20))
+    return "".join(secrets.choice(alphabet) for i in range(20))
 
 
 def main():
@@ -31,14 +32,14 @@ def main():
     print("=" * 60)
     print("\nCopy these values into your 'config.toml' or '.env' file.\n")
 
-    print(f"[django_settings]")
+    print("[django_settings]")
     print(f'DJANGO_SECRET_KEY = "{generate_django_secret_key()}"')
 
-    print(f"\n[security]")
+    print("\n[security]")
     print(f'MASTER_KEY = "{generate_master_key()}"')
     print(f'ENCRYPTION_PEPPER = "{generate_encryption_pepper()}"')
 
-    print(f"\n[DB] (Optional generated password)")
+    print("\n[DB] (Optional generated password)")
     print(f'POSTGRES_PASSWORD = "{generate_postgres_password()}"')
 
     print("\n" + "=" * 60)

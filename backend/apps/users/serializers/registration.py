@@ -1,11 +1,13 @@
 import logging
 from typing import Any
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializer purely focused on user creation with strict validation."""
@@ -38,11 +40,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data: dict[str, Any]) -> Any:
         """Safely creates a mapped User through the UserManager."""
         validated_data.pop("password_confirm")
-        
+
         user = User.objects.create_user(
             email=validated_data["email"],
             username=validated_data["username"],
-            password=validated_data["password"]
+            password=validated_data["password"],
         )
 
         logger.info(f"Registered new user via API: {user.email}")

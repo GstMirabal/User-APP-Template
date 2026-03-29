@@ -1,29 +1,29 @@
 import logging
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import GenericViewSet
 
-from rest_framework.throttling import ScopedRateThrottle
-from django.db import transaction
-from .permissions import IsVerified, IsPremiumUser, RequiresStepUp
-from .services import VerificationService
-from django.utils import timezone
-
+from .permissions import IsVerified, RequiresStepUp
 from .serializers import (
     UserProfileSerializer,
     UserRegistrationSerializer,
     UserSecretSerializer,
     UserSerializer,
 )
+from .services import VerificationService
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
 
 class UserViewSet(GenericViewSet):
     """ViewSet to orchestrate Account Registration and Profile Management."""
@@ -41,14 +41,14 @@ class UserViewSet(GenericViewSet):
         """Override to map permissions based on exact endpoint action."""
         if self.action in ["register", "verify"]:
             return [AllowAny()]
-        
+
         if self.action == "reauth":
             return [IsAuthenticated()]
-        
+
         # High-sensitivity actions requiring verification + Step-Up Auth
         if self.action in ["secrets", "anonymize_account"]:
             return [IsAuthenticated(), IsVerified(), RequiresStepUp()]
-            
+
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -66,19 +66,26 @@ class UserViewSet(GenericViewSet):
         """Validate password to gain Step-Up access for 5 minutes."""
         password = request.data.get("password")
         if not password:
-            return Response({"error": "Password is required."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if request.user.check_password(password):
-            request.session['step_up_timestamp'] = timezone.now().isoformat()
-            return Response({"detail": "Step-Up validation successful. Access granted for 5 minutes."}, status=status.HTTP_200_OK)
-        
-        return Response({"error": "Incorrect password."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Password is required."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
+        if request.user.check_password(password):
+            request.session["step_up_timestamp"] = timezone.now().isoformat()
+            return Response(
+                {
+                    "detail": "Step-Up validation successful. Access granted for 5 minutes."
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {"error": "Incorrect password."}, status=status.HTTP_403_FORBIDDEN
+        )
 
     @transaction.atomic
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request: Request) -> Response:
-
         """Register a new User-APP-Template user account."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -146,9 +153,11 @@ class UserViewSet(GenericViewSet):
     def profile(self, request: Request) -> Response:
         """Updates nested profile preferences separately."""
         user = request.user
-        
+
         # UserProfile must exist, post_save guarantees atomic synthesis.
-        serializer = UserProfileSerializer(user.profile, data=request.data, partial=True)
+        serializer = UserProfileSerializer(
+            user.profile, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -157,14 +166,14 @@ class UserViewSet(GenericViewSet):
     @action(detail=False, methods=["patch"], url_path="me/secrets")
     def secrets(self, request: Request) -> Response:
         """Update encrypted Binance Keys and Data.
-        
+
         Using write-only properties ensures existing values never leak back.
         """
         user = request.user
 
         # Ideally add a Step-Up Auth gate here (Require Re-Login password/OTP)
         # We will add it inside the Step-Up Phase 3.
-        
+
         serializer = UserSecretSerializer(user.secrets, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -180,16 +189,16 @@ class UserViewSet(GenericViewSet):
         Generates a secret and URI to configure Google Authenticator.
         """
         user = request.user
-        
+
         # Setup Guard: Prevent overwriting active 2FA
         if user.two_factor_enabled:
             return Response(
                 {"error": "2FA is already active. Deactivate it first to reconfigure."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         data = VerificationService.setup_2fa(user)
-        
+
         return Response(
             {
                 "detail": "Scan this URI in your authenticator app and SAVE your recovery codes safely.",
@@ -199,7 +208,6 @@ class UserViewSet(GenericViewSet):
             },
             status=status.HTTP_200_OK,
         )
-
 
     @action(detail=False, methods=["post"], url_path="me/2fa/activate")
     def activate_2fa(self, request: Request) -> Response:
@@ -219,12 +227,11 @@ class UserViewSet(GenericViewSet):
             # Update 2FA flag on User model
             user.two_factor_enabled = True
             user.save(update_fields=["two_factor_enabled"])
-            
+
             return Response(
                 {"detail": "Two-Factor Authentication (2FA) activated successfully!"},
                 status=status.HTTP_200_OK,
             )
-
 
         return Response(
             {"error": "Invalid or expired 2FA token."},
@@ -249,7 +256,7 @@ class UserViewSet(GenericViewSet):
             f"User {user.email} initialized irreversable anonymize sequence."
         )
 
-        # Extract the user into a specific single-object QuerySet 
+        # Extract the user into a specific single-object QuerySet
         # that utilizes the SoftDeleteQuerySet to trigger the Manager.
         qs = User.objects.filter(id=user.id)
         qs.anonymize()

@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 
 if TYPE_CHECKING:
-    from cryptography.fernet import Fernet as FernetType
+    pass
 
 
 def get_fernet() -> Fernet:

@@ -41,12 +41,12 @@ def create_user_profile_and_secrets(
             with transaction.atomic():
                 # Capture temporary registration metadata (if provided during creation)
                 registration_metadata: dict[str, Any] = getattr(
-                    instance, '_registration_metadata', {}
+                    instance, "_registration_metadata", {}
                 )
 
                 # Determine initial language preference
                 initial_language: str = registration_metadata.get(
-                    'language_code', 'en-us'
+                    "language_code", "en-us"
                 )
 
                 # 1. Create UserProfile

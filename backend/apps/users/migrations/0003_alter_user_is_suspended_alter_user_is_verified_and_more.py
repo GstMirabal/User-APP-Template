@@ -4,35 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0002_alter_userprofile_role'),
+        ("users", "0002_alter_userprofile_role"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='is_suspended',
-            field=models.BooleanField(default=False, verbose_name='Suspendido'),
+            model_name="user",
+            name="is_suspended",
+            field=models.BooleanField(default=False, verbose_name="Suspendido"),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='is_verified',
-            field=models.BooleanField(default=False, verbose_name='Email verificado'),
+            model_name="user",
+            name="is_verified",
+            field=models.BooleanField(default=False, verbose_name="Email verificado"),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='username',
-            field=models.CharField(error_messages={'unique': 'Ya existe un usuario con este nombre.'}, help_text='Requerido. 150 caracteres o menos.', max_length=150, unique=True, verbose_name='Nombre de usuario'),
+            model_name="user",
+            name="username",
+            field=models.CharField(
+                error_messages={"unique": "Ya existe un usuario con este nombre."},
+                help_text="Requerido. 150 caracteres o menos.",
+                max_length=150,
+                unique=True,
+                verbose_name="Nombre de usuario",
+            ),
         ),
         migrations.AlterField(
-            model_name='usersecret',
-            name='otp_recovery_codes',
-            field=models.TextField(blank=True, null=True, verbose_name='Códigos de recuperación 2FA'),
+            model_name="usersecret",
+            name="otp_recovery_codes",
+            field=models.TextField(
+                blank=True, null=True, verbose_name="Códigos de recuperación 2FA"
+            ),
         ),
         migrations.AlterField(
-            model_name='usersecret',
-            name='otp_secret_key',
-            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='Clave secreta 2FA'),
+            model_name="usersecret",
+            name="otp_secret_key",
+            field=models.CharField(
+                blank=True, max_length=255, null=True, verbose_name="Clave secreta 2FA"
+            ),
         ),
     ]

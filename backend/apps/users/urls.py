@@ -15,6 +15,5 @@ urlpatterns = [
     # PATCH /users/me/profile/
     # PATCH /users/me/secrets/
     # POST /users/me/anonymize/
-    
     path("", include(router.urls)),
 ]

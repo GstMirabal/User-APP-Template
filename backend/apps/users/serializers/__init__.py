@@ -1,11 +1,11 @@
 from .profile import UserProfileSerializer
-from .secrets import UserSecretSerializer
 from .registration import UserRegistrationSerializer
+from .secrets import UserSecretSerializer
 from .user import UserSerializer
 
 __all__ = [
     "UserProfileSerializer",
-    "UserSecretSerializer",
     "UserRegistrationSerializer",
+    "UserSecretSerializer",
     "UserSerializer",
 ]
