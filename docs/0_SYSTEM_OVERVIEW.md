@@ -1,7 +1,7 @@
 # 🧭 System Overview: User-APP-Template
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #001
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: 86cc29b
 
 This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` requires every session to read this file before anything else. It is intentionally short — for the full component inventory, see `.agents/docs/architecture/topology_map.md`.
 
@@ -20,7 +20,8 @@ This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework a
 | **Datastore** | PostgreSQL 15 (Docker, host port `5434`) |
 | **Auth** | SimpleJWT (HS256) + `django-axes` + TOTP (`pyotp`) |
 | **API docs** | OAS 3.0 via `drf-spectacular` |
-| **Quality** | `ruff` (lint/format), `mypy --strict` |
+| **Quality** | `ruff` (lint), `mypy --strict`, `pytest` (in-RAM SQLite) |
+| **CI** | GitHub Actions — lint, system checks, tests, production-settings smoke |
 
 ## 2. Architecture at a glance (C4 Level 1-2)
 
@@ -43,7 +44,7 @@ This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework a
 | Container | Path | Responsibility |
 | :--- | :--- | :--- |
 | **`users`** | `backend/apps/users/` | Identity domain: User/Profile/Secret models, registration, 2FA, anonymization. |
-| **`core`** | `backend/apps/core/` | Cross-cutting primitives: health check, password complexity validator. |
+| **`core`** | `backend/apps/core/` | Cross-cutting primitives: health check, password complexity validator, admin-integrity system check. |
 | **`config`** | `backend/config/` | Django project configuration: settings, root URLConf, WSGI/ASGI. |
 | **`utils`** | `backend/utils/` | Cryptographic helpers: Fernet encryption, HMAC blind indexing. |
 | **`db`** | `docker-compose.yml` | PostgreSQL 15 container, volume `./.docker-db-data`. |
@@ -85,6 +86,7 @@ Run `/agents:start`. It will:
 | `docs/walkthroughs/*_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
 | `docs/roadmaps/GLOBAL_ROADMAP.md` | Future | Prioritized remediation and feature backlog. |
 | `docs/sprints/000-backend-identity/` | History | The Scenario C onboarding audit record. |
+| `docs/sprints/001-backend-verification/` | History | Repair of five blocking defects; test harness and CI restored. |
 
 ## 7. Full inventory
 

@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: CONFIG
 **File**: `docs/walkthroughs/CONFIG_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #000
+**Last updated**: Sprint #001
 
 ---
 
@@ -15,12 +15,18 @@
 | pre-#000 | OpenAPI 3.0 surface | `drf-spectacular` with Swagger and Redoc UIs. |
 | pre-#000 | UTC-normalized logging | `UTCFormatter` overriding `formatTime`. |
 | #000 | Retroactive documentation | Module reverse-engineered into `docs/architecture/CONFIG_BLUEPRINT.md`. |
+| #001 | Production mode made reachable | Explicit boolean coercion for `DEBUG`; the whole `if not DEBUG:` hardening block now executes. |
+| #001 | Application logging repaired | `apps` and `utils` logger prefixes registered against the existing handlers. |
+| #001 | Test harness restored | `settings_test.py` + `[tool.pytest.ini_options]`; suite runs on in-RAM SQLite. |
+| #001 | ruff configuration unified | `ruff.toml` is the single authority; 79 findings to zero. |
 
 ## 2. Current state
 
-Configuration loads and the project boots — `ruff`, `mypy`, and the Django app registry all resolve `config.settings` successfully. The security posture is genuinely strong for a template: the `DEBUG = False` branch covers the headers most projects forget, refresh tokens rotate and blacklist, and the process refuses to start without `MASTER_KEY` and `ENCRYPTION_PEPPER`.
+Configuration loads, the project boots, and `manage.py check --fail-level WARNING` exits clean.
 
-Two structural concerns stand out. `settings.py` is a single 572-line module (ruff `PLR0915`) mixing secret resolution, security headers, third-party wiring, and logging in one file. It is *not* a graph god-node — measured degree centrality puts `apps/users/views.py` (111) and `apps/users/managers.py` (109) at the top, with `settings.py` outside the top eight — so the concern is module cohesion, not blast radius. And `SIMPLE_JWT["SIGNING_KEY"]` reuses Django's `SECRET_KEY`, so any disclosure of the session-signing secret is simultaneously a full JWT forgery capability.
+The security posture is genuinely strong for a template — HSTS with preload, CSP, secure/HttpOnly/SameSite cookies, Argon2 hashing with a 12-character minimum, rotating and blacklisted refresh tokens, and a hard refusal to start without `MASTER_KEY` and `ENCRYPTION_PEPPER`. **As of Sprint #001 that posture is also reachable.** It previously was not: `DEBUG` arrived as a string and was used unconverted, so `DEBUG=False` stayed truthy and the entire `if not DEBUG:` block was dead code. CI now boots with `DEBUG=False` on every run and asserts the hardening actually applies.
+
+One structural concern remains. `settings.py` is a single 572-line module mixing secret resolution, security headers, third-party wiring and logging. It is *not* a graph god-node — measured degree centrality puts `apps/users/views.py` (111) and `apps/users/managers.py` (109) at the top, with `settings.py` outside the top eight — so this is cohesion, not blast radius. And `SIMPLE_JWT["SIGNING_KEY"]` still reuses Django's `SECRET_KEY`, so disclosure of the session-signing secret is simultaneously a full JWT forgery capability.
 
 Implements: `docs/architecture/CONFIG_BLUEPRINT.md`.
 
@@ -28,14 +34,13 @@ Implements: `docs/architecture/CONFIG_BLUEPRINT.md`.
 
 | Item | Severity | Marked as | Tracked where |
 | :--- | :--- | :--- | :--- |
-| No `pytest-django` configuration in `pyproject.toml` (`DJANGO_SETTINGS_MODULE` / `pythonpath`), so the entire test suite is uncollectable. This is a `config`-owned defect with project-wide blast radius. | **Blocker** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| `SIMPLE_JWT["SIGNING_KEY"] = SECRET_KEY` — one secret serves both session signing and token forgery resistance; rotating either forces the other. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| `settings.py` is 572 lines in one module (ruff `PLR0915`), mixing secret resolution, security headers, third-party wiring, and logging. Cohesion concern, not a god-node. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| `ruff check backend/` reports **79 findings**: `E501` ×23, `RUF012` ×20, `PLC0415` ×15, `ERA001` ×6, `PTH*` ×8, `N806` ×2, `E402` ×2, `B904` ×2, `PLR0915` ×1. `agents.md §1 linter_command` rejects any exit code > 0, so the Quality Gate cannot currently pass. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| Two competing ruff configurations exist. `ruff --show-settings` confirms `ruff.toml` is authoritative, so the entire `[tool.ruff]` block in `pyproject.toml` — including its `ignore` list for `PLC0415`/`PLR0915` and its `select` set — is dead configuration. This is why ignored rules still surface. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| `B904` ×2 — `raise` inside `except` without `from`, losing the exception chain. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2 |
-| `.npmrc` supply-chain controls (RA-10: `ignore-scripts=true`, `minimum-release-age=1440`) are absent. Currently moot — no JS/TS surface exists — but required the moment a frontend lands. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2 |
-| `identity.config.json` declares `governed_by_agents: false` and leaves owner/project fields empty, though `.agents` is installed and active. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2 |
+| `SIMPLE_JWT["SIGNING_KEY"] = SECRET_KEY` — one secret serves both session signing and token forgery resistance; rotating either forces the other. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-6 |
+| No `CACHES` block, so Django falls back to per-process `LocMemCache`. TOTP anti-replay does not hold across workers. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-7 |
+| `settings.py` is 572 lines in one module, mixing secret resolution, security headers, third-party wiring and logging. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-7 |
+| `ruff format --check` is not yet a CI gate: the codebase predates this formatter configuration and would need a repo-wide reformat first. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-8 |
+| `.npmrc` supply-chain controls (RA-10) are absent. Moot while no JS/TS surface exists; required the moment a frontend lands. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-5 |
+
+**Resolved in Sprint #001**: test harness restored; application logging repaired; production mode made reachable; `.env` precedence corrected; ruff configuration unified (79 findings to zero); deprecated Axes setting replaced; `identity.config.json` populated.
 
 ## 4. How to operate it
 
@@ -46,8 +51,11 @@ venv/bin/python backend/manage.py check
 # Inspect the generated OpenAPI schema
 venv/bin/python backend/manage.py spectacular --file schema.yml
 
-# Confirm which ruff config is authoritative
-venv/bin/ruff check backend/ --show-settings | head -5
+# Lint (single authority: ruff.toml)
+venv/bin/ruff check backend/
+
+# Full suite (in-RAM SQLite, no Docker needed)
+venv/bin/python -m pytest -q
 ```
 ---
 *Updated at every Sprint Closeout touching this module (RA-05).*

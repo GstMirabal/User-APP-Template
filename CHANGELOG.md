@@ -8,6 +8,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
+### Fixed
+- **Django admin no longer crashes.** `UserProfileInline` declared `two_factor_enabled`, a field of `User` rather than `UserProfile`, so every user change page returned HTTP 500. Django's own checks do not validate inline fields, so `manage.py check` reported nothing. #001
+- **`GET /health/` no longer returns 500 unconditionally.** The view passed `status_code=` to DRF's `Response`, which accepts `status=`; every request raised `TypeError`, including the healthy path. #001
+- **Application logs are no longer discarded.** `LOGGING` declared only the `django` and `project` loggers while modules call `getLogger(__name__)` (`apps.*`, `utils.*`), so those records reached zero handlers — silently dropping the decryption-failure `CRITICAL`, the TOTP replay warning and the anonymization audit trail. #001
+- **Production mode is reachable.** `DEBUG` arrived from `config.toml` as a string and was used unconverted; every non-empty string is truthy, so `DEBUG=False` stayed truthy and the entire `if not DEBUG:` hardening block — HSTS, secure cookies, SSL redirect, plus the `ALLOWED_HOSTS`, CORS and email production guards — was unreachable code. Boolean coercion now rejects ambiguous values loudly. #001
+- `.env` loading uses `setdefault`, so variables already present in the real environment win over the file. The previous behaviour let a stray `.env` silently override values injected into a container or CI runner. #001
+- Replaced the removed `AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP` with `AXES_LOCKOUT_PARAMETERS`. #001
+
+### Added
+- **Executable test suite.** `[tool.pytest.ini_options]` plus `config/settings_test.py` running against an in-RAM SQLite database (`agents.md §3 local_testing`). The suite went from *uncollectable* to 52 passing tests; the nine pre-existing tests were correct all along and had simply never run. #001
+- **Custom system check** (`apps/core/checks.py`, `core.E001`) that constructs every registered admin form and inline formset at startup, turning the admin-crash class of defect into a boot-time error instead of a runtime 500. #001
+- **Continuous integration** (`.github/workflows/ci.yml`): lint, Django system checks at `--fail-level WARNING`, the test suite, and a production-settings smoke test that boots with `DEBUG=False` — the step that would have caught the unreachable-production defect. #001
+- `factory_boy` factories for the users app (`UserFactory`, `VerifiedUserFactory`, `StaffUserFactory`). #001
+
+### Changed
+- **Unified ruff configuration in `ruff.toml`.** The `[tool.ruff]` block in `pyproject.toml` was dead configuration — `ruff` resolves `ruff.toml` first — which is why rules its `ignore` list named kept surfacing. Findings dropped from 79 to zero. #001
+- Test modules restructured into `tests/` packages per app. #001
+- `make test` runs the whole suite instead of a single file; added `make check`. #001
+- `chore(deps): pin .agents` to a secret-scanner fix. The commit hook matched the bare substring `PASSWORD =`, flagging every legitimate read of a secret (`password = request.data.get("password")`), which no project handling authentication can avoid. It now requires a secret-named identifier assigned a string *literal*, and additionally detects `MASTER_KEY`, `SIGNING_KEY` and `ENCRYPTION_PEPPER`, which the previous patterns missed entirely. #001
+
 ### Added
 - Adopted Token-Optimized Agent Pipeline governance (`.agents` v4.2.1) — onboarding scenario: **C (mature project, no prior agents)**. Full reverse engineering of the inherited Django IAM backend. #000
 - `docs/` tree instantiated: `architecture/`, `roadmaps/`, `walkthroughs/`, `sprints/`, `decisions/`, `guides/`, `contracts/`. #000

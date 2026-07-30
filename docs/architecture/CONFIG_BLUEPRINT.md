@@ -2,9 +2,9 @@
 **File**: `docs/architecture/CONFIG_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #001
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: 86cc29b
 
 ---
 
@@ -90,6 +90,8 @@ Applies `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `S
 | Axes must be evaluated before the model backend. | `AUTHENTICATION_BACKENDS[0] == "axes.backends.AxesBackend"`. |
 | Refresh tokens must rotate and blacklist. | `SIMPLE_JWT["ROTATE_REFRESH_TOKENS"]` and `["BLACKLIST_AFTER_ROTATION"]` are both `True`. |
 | Production must serve HSTS for one year with preload. | `SECURE_HSTS_SECONDS == 31536000` in the `DEBUG = False` branch. |
+| `DEBUG` must be a real boolean, never a truthy string. | `_as_bool()` coerces it and rejects anything ambiguous; the CI production smoke step asserts `settings.DEBUG is False`. |
+| A real environment variable must override a `.env` entry. | `.env` loading uses `os.environ.setdefault`. |
 
 ## 7. Decisions
 

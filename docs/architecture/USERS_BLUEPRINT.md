@@ -2,9 +2,9 @@
 **File**: `docs/architecture/USERS_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #001
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: 86cc29b
 
 ---
 
@@ -25,7 +25,7 @@ The `users` module is the identity domain of User-APP-Template. It owns the cust
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `tasks.py`, `admin.py`, `urls.py`, `migrations/`. |
+| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `tasks.py`, `admin.py`, `urls.py`, `migrations/`. |
 | **Must not touch** | `backend/config/settings.py`, `backend/apps/core/`, `backend/utils/encryption.py` (consumes, never edits), other apps' migrations. |
 
 Contracts (formal interfaces this module exposes):
