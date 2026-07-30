@@ -8,6 +8,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.0.0] - 2026-07-30
+
+First release of the template as a verifiable, deployable and generic Django
+user-management foundation. Consolidates Sprints #000-#003.
+
+**Breaking**: migration `0007` irreversibly drops `api_key_binance_encrypted`,
+`api_key_binance_index` and `api_secret_binance_encrypted`. Export any data in
+those columns before migrating ([ADR-0005](docs/decisions/ADR-0005-generic-secret-vault.md)).
+
+**Required configuration**: `REDIS_URL` in `[cache]` — the project refuses to
+start with `DEBUG=False` and no shared cache ([ADR-0001](docs/decisions/ADR-0001-shared-cache-backend.md)).
+`JWT_SIGNING_KEY` in `[security]` is strongly recommended; without it the
+project falls back to `DJANGO_SECRET_KEY` and warns at startup
+([ADR-0003](docs/decisions/ADR-0003-separate-jwt-signing-key.md)).
+
 ### Added
 - **Customization guide** (`docs/guides/USERS_CUSTOMIZATION_GUIDE.md`) stating which components are the identity core and which are optional extras, with exactly what breaks when each is removed. #003
 - `requirements-dev.txt`, so a deployment no longer installs pytest, factory-boy and ruff alongside its runtime dependencies. #003
