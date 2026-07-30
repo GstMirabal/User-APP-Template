@@ -542,7 +542,7 @@ AUTHENTICATION_BACKENDS = [
 # -- 12.2: Axes Settings (Brute Force Protection) --
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = datetime.timedelta(minutes=15)
-AXES_LOCKOUT_TEMPLATE = None  # Devuelve JSON vía DRF
+AXES_LOCKOUT_TEMPLATE = None  # Returns JSON through DRF
 AXES_RESET_ON_SUCCESS = True
 # Lock on the (username, IP) pair. A nested list means "combine these", which
 # is the Axes 6 replacement for the removed

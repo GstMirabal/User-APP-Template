@@ -8,7 +8,7 @@ from .models import User, UserProfile, UserSecret
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
-    verbose_name_plural = _("Perfil del Usuario")
+    verbose_name_plural = _("User profile")
     fk_name = "user"
     fields = (
         "role",
@@ -34,19 +34,18 @@ class UserSecretInline(admin.StackedInline):
 
     model = UserSecret
     can_delete = False
-    verbose_name_plural = _("Bóveda de Secretos (Solo Lectura)")
+    verbose_name_plural = _("Secret vault (read-only)")
     fk_name = "user"
 
     fields = (
         "has_identity_data",
-        "has_exchange_keys",
         "has_two_factor",
         "phone_verified_at",
         "updated_at",
     )
     readonly_fields = fields
 
-    @admin.display(boolean=True, description=_("Datos de identidad guardados"))
+    @admin.display(boolean=True, description=_("Identity data stored"))
     def has_identity_data(self, obj: UserSecret) -> bool:
         """Reports whether any encrypted identity field is populated."""
         return bool(
@@ -55,12 +54,7 @@ class UserSecretInline(admin.StackedInline):
             or obj.phone_number_encrypted
         )
 
-    @admin.display(boolean=True, description=_("Credenciales de exchange guardadas"))
-    def has_exchange_keys(self, obj: UserSecret) -> bool:
-        """Reports whether exchange API credentials are configured."""
-        return bool(obj.api_key_binance_encrypted and obj.api_secret_binance_encrypted)
-
-    @admin.display(boolean=True, description=_("2FA configurado"))
+    @admin.display(boolean=True, description=_("Two-factor configured"))
     def has_two_factor(self, obj: UserSecret) -> bool:
         """Reports whether a TOTP secret is present."""
         return bool(obj.otp_secret_key)
@@ -68,9 +62,7 @@ class UserSecretInline(admin.StackedInline):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """
-    Administración central de usuarios blindada.
-    """
+    """Hardened central administration for user accounts."""
 
     inlines = (UserProfileInline, UserSecretInline)
 
@@ -96,11 +88,11 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
         (
-            _("Información Personal"),
+            _("Personal information"),
             {"fields": ("first_name", "last_name", "last_ip_address")},
         ),
         (
-            _("Permisos y Estado"),
+            _("Permissions and status"),
             {
                 "fields": (
                     "is_active",
@@ -115,7 +107,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         (
-            _("Auditoría"),
+            _("Audit"),
             {
                 "fields": (
                     "date_joined",
@@ -138,8 +130,8 @@ class UserAdmin(BaseUserAdmin):
     def get_role(self, obj):
         return obj.profile.role if hasattr(obj, "profile") else "-"
 
-    get_role.short_description = _("Rol")
+    get_role.short_description = _("Role")
 
     def has_delete_permission(self, request, obj=None):
-        """Bloqueo de borrado destructivo desde el admin (Usar Anonymize/SoftDelete)."""
+        """Blocks destructive deletion; anonymisation is the sanctioned path."""
         return False

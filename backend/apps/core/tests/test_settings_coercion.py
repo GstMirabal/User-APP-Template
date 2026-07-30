@@ -34,7 +34,7 @@ def test_the_original_defect_is_fixed() -> None:
     assert _as_bool("False", "DEBUG") is False
 
 
-@pytest.mark.parametrize("raw", ["maybe", "2", "disabled", "sí"])
+@pytest.mark.parametrize("raw", ["maybe", "2", "disabled", "enabled"])
 def test_unrecognised_values_are_rejected_loudly(raw: str) -> None:
     """An ambiguous value must abort startup rather than silently pick a side."""
     with pytest.raises(ImproperlyConfigured, match="must be a boolean"):

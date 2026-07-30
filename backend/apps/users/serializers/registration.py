@@ -33,7 +33,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """Ensures password confirmation matches."""
         if data["password"] != data["password_confirm"]:
             raise serializers.ValidationError(
-                {"password_confirm": "Las contraseñas no coinciden."}
+                {"password_confirm": "The passwords do not match."}
             )
         return data
 

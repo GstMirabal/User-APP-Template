@@ -1,8 +1,10 @@
 """Tests for the registration verification flow (ADR-0004).
 
-The defects these pin: the OTP was written in plaintext into
-`api_key_binance_encrypted` — destroying any exchange credential the user had
-stored — never expired, and was emitted to the log stream at INFO.
+The defects these pin: the OTP was written in plaintext into a credential
+column — destroying whatever the user had stored there — never expired, and was
+emitted to the log stream at INFO. That column has since been removed
+(ADR-0005), so the collision case is asserted against `dni`, which shares the
+vault.
 """
 
 from datetime import timedelta
@@ -31,18 +33,21 @@ class TestVerificationStorage:
         assert otp not in raw, "the code is readable in the stored column"
         assert user.secrets.get_sensitive_data("verification_otp") == otp
 
-    def test_exchange_credentials_survive_verification(self) -> None:
-        """Direct regression: issuing a code used to destroy a stored key."""
+    def test_other_vault_fields_survive_verification(self) -> None:
+        """Direct regression: issuing a code used to destroy a stored value.
+
+        The OTP borrowed a credential column, so registering a user wiped
+        whatever was in it. The code now has its own field and must not touch
+        any other.
+        """
         user = UserFactory()
-        user.secrets.set_sensitive_data("api_key_binance", "user-supplied-key")
+        user.secrets.set_sensitive_data("dni", "12345678Z")
         user.secrets.save()
 
         VerificationService.initialize_verification_flow(user)
         user.secrets.refresh_from_db()
 
-        assert (
-            user.secrets.get_sensitive_data("api_key_binance") == "user-supplied-key"
-        )
+        assert user.secrets.get_sensitive_data("dni") == "12345678Z"
 
     def test_code_is_cleared_after_success(self) -> None:
         """A consumed code leaves nothing behind."""

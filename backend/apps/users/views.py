@@ -191,21 +191,21 @@ class UserViewSet(GenericViewSet):
 
     @action(detail=False, methods=["patch"], url_path="me/secrets")
     def secrets(self, request: Request) -> Response:
-        """Update encrypted Binance Keys and Data.
+        """Writes identity data into the encrypted vault.
 
-        Using write-only properties ensures existing values never leak back.
+        Gated by verification plus step-up re-authentication. Every field is
+        write-only, so a stored value can be overwritten but never read back.
         """
         user = request.user
 
-        # Ideally add a Step-Up Auth gate here (Require Re-Login password/OTP)
-        # We will add it inside the Step-Up Phase 3.
-
-        serializer = UserSecretSerializer(user.secrets, data=request.data, partial=True)
+        serializer = UserSecretSerializer(
+            user.secrets, data=request.data, partial=True, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(
-            {"detail": "Credentials and Secrets updated cryptographically."},
+            {"detail": "Sensitive data stored, encrypted at rest."},
             status=status.HTTP_200_OK,
         )
 

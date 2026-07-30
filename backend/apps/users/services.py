@@ -50,8 +50,8 @@ class VerificationService:
         """Issues a verification code and stores it encrypted, with an expiry.
 
         The code lives in its own encrypted column (ADR-0004). It previously
-        overwrote `api_key_binance_encrypted` in plaintext, destroying any
-        exchange credential the user had stored.
+        borrowed a credential column and wrote there in plaintext, destroying
+        whatever the user had stored.
 
         Args:
             user (User): The user being verified.
@@ -129,9 +129,16 @@ class VerificationService:
             user=user, field_affected=field, action_type=action
         )
 
-    def setup_2fa(self: User) -> Setup2FAResult:
-        """
-        Initializes a new TOTP secret and generates recovery codes.
+    @staticmethod
+    def setup_2fa(user: User) -> Setup2FAResult:
+        """Initialises a TOTP secret and generates recovery codes.
+
+        Args:
+            user (User): The account enrolling in two-factor authentication.
+
+        Returns:
+            Setup2FAResult: The secret, its provisioning URI, and the plaintext
+                recovery codes, which the caller must show once and never again.
         """
         secret = pyotp.random_base32()
 
@@ -142,13 +149,13 @@ class VerificationService:
             for _ in range(8)
         ]
 
-        self.secrets.otp_secret_key = secret
+        user.secrets.otp_secret_key = secret
         # Store as encrypted CSV
-        self.secrets.set_sensitive_data("otp_recovery_codes", ",".join(recovery_list))
-        self.secrets.save()
+        user.secrets.set_sensitive_data("otp_recovery_codes", ",".join(recovery_list))
+        user.secrets.save()
 
         otp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
-            name=self.email, issuer_name="User-APP-Template"
+            name=user.email, issuer_name="User-APP-Template"
         )
 
         return {"secret": secret, "otp_uri": otp_uri, "recovery_codes": recovery_list}

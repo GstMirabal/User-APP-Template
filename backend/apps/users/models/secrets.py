@@ -5,19 +5,30 @@ from .user import User
 
 
 class UserSecret(models.Model):
-    """Secret vault for highly sensitive user data."""
+    """Vault for a user's most sensitive data.
+
+    Every value is encrypted at rest with Fernet. Fields that must support
+    exact-match lookup carry a companion `*_index` column holding an
+    HMAC-SHA256 blind index, so a record can be found without decrypting the
+    whole table.
+
+    Values are written and read exclusively through `set_sensitive_data` and
+    `get_sensitive_data`; assigning a raw column directly bypasses encryption.
+    """
 
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         related_name="secrets",
-        verbose_name=_("Usuario"),
+        verbose_name=_("User"),
     )
 
-    # Identidad Cifrada
-    dni_encrypted = models.TextField(_("DNI / NIF (Cifrado)"), blank=True, null=True)
+    # Encrypted identity
+    dni_encrypted = models.TextField(
+        _("National ID (encrypted)"), blank=True, null=True
+    )
     dni_index = models.CharField(
-        _("DNI / NIF (Índice)"),
+        _("National ID (blind index)"),
         max_length=64,
         unique=True,
         db_index=True,
@@ -25,56 +36,50 @@ class UserSecret(models.Model):
         null=True,
     )
     date_of_birth_encrypted = models.TextField(
-        _("Fecha de nacimiento (Cifrado)"), blank=True, null=True
+        _("Date of birth (encrypted)"), blank=True, null=True
     )
     phone_number_encrypted = models.TextField(
-        _("Teléfono (Cifrado)"), blank=True, null=True
+        _("Phone number (encrypted)"), blank=True, null=True
     )
     phone_number_index = models.CharField(
-        _("Teléfono (Índice)"), max_length=64, db_index=True, blank=True, null=True
-    )
-    phone_verified_at = models.DateTimeField(
-        _("Teléfono verificado el"), blank=True, null=True
-    )
-
-    # Credenciales Exchanges
-    api_key_binance_encrypted = models.TextField(
-        _("Binance API Key (Cifrada)"), blank=True, null=True
-    )
-    api_key_binance_index = models.CharField(
-        _("Binance API Key (Índice)"),
+        _("Phone number (blind index)"),
         max_length=64,
         db_index=True,
         blank=True,
         null=True,
     )
-    api_secret_binance_encrypted = models.TextField(
-        _("Binance API Secret (Cifrada)"), blank=True, null=True
+    phone_verified_at = models.DateTimeField(
+        _("Phone verified at"), blank=True, null=True
     )
 
-    # Código de verificación de registro (ADR-0004).
-    # Campo propio y cifrado: antes se reutilizaba `api_key_binance_encrypted`,
-    # lo que pisaba una credencial real y guardaba el código en claro.
+    # Registration verification code (ADR-0004). Its own encrypted field with
+    # an expiry, rather than borrowing a credential column.
     verification_otp_encrypted = models.TextField(
-        _("Código de verificación (Cifrado)"), blank=True, null=True
+        _("Verification code (encrypted)"), blank=True, null=True
     )
     verification_otp_expires_at = models.DateTimeField(
-        _("Código de verificación expira el"), blank=True, null=True
+        _("Verification code expires at"), blank=True, null=True
     )
 
-    # Seguridad 2FA
+    # Two-factor authentication
     otp_secret_key = models.CharField(
-        _("Clave secreta 2FA"), max_length=255, blank=True, null=True
+        _("2FA secret key"), max_length=255, blank=True, null=True
     )
     otp_recovery_codes = models.TextField(
-        _("Códigos de recuperación 2FA"), blank=True, null=True
+        _("2FA recovery codes"), blank=True, null=True
     )
-    updated_at = models.DateTimeField(_("Última actualización"), auto_now=True)
-    deleted_at = models.DateTimeField(
-        _("Fecha de borrado"), blank=True, null=True, default=None
-    )
+    updated_at = models.DateTimeField(_("Last updated"), auto_now=True)
+    deleted_at = models.DateTimeField(_("Deleted at"), blank=True, null=True, default=None)
 
     def set_sensitive_data(self, field_name: str, raw_value: str | None) -> None:
+        """Encrypts a value into its column, deriving a blind index if one exists.
+
+        Args:
+            field_name (str): Logical field name, without the `_encrypted`
+                suffix (for example `"dni"`).
+            raw_value (str | None): The plaintext value, or None to clear both
+                the ciphertext and its index.
+        """
         from utils.encryption import encrypt_value, generate_blind_index
 
         if raw_value is None:
@@ -88,6 +93,16 @@ class UserSecret(models.Model):
             setattr(self, f"{field_name}_index", generate_blind_index(raw_value))
 
     def get_sensitive_data(self, field_name: str) -> str | None:
+        """Decrypts a stored value.
+
+        Args:
+            field_name (str): Logical field name, without the `_encrypted`
+                suffix.
+
+        Returns:
+            str | None: The plaintext value, or None when absent or when
+                decryption failed.
+        """
         import logging
 
         from cryptography.fernet import InvalidToken
@@ -108,29 +123,29 @@ class UserSecret(models.Model):
 
     class Meta:
         app_label = "users"
-        verbose_name = _("Secretos de Usuario")
-        verbose_name_plural = _("Secretos de Usuarios")
+        verbose_name = _("User secret")
+        verbose_name_plural = _("User secrets")
 
     def __str__(self) -> str:
-        return f"Secretos de {self.user.username}"
+        return f"Secrets for {self.user.username}"
 
 
 class UserSecretAudit(models.Model):
-    """Immutable audit log for changes to user secrets."""
+    """Append-only record of changes to a user's secret vault."""
 
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="secret_audits",
-        verbose_name=_("Usuario"),
+        verbose_name=_("User"),
     )
-    field_affected = models.CharField(_("Campo afectado"), max_length=50)
-    action_type = models.CharField(_("Tipo de acción"), max_length=10)  # UPDATE, DELETE
-    timestamp = models.DateTimeField(_("Fecha y hora"), auto_now_add=True)
-    ip_address = models.GenericIPAddressField(_("IP del cambio"), blank=True, null=True)
+    field_affected = models.CharField(_("Field affected"), max_length=50)
+    action_type = models.CharField(_("Action type"), max_length=10)  # UPDATE, DELETE
+    timestamp = models.DateTimeField(_("Timestamp"), auto_now_add=True)
+    ip_address = models.GenericIPAddressField(_("Source IP"), blank=True, null=True)
 
     class Meta:
         app_label = "users"
-        verbose_name = _("Auditoría de Secrecto")
-        verbose_name_plural = _("Auditorías de Secrectos")
+        verbose_name = _("Secret audit entry")
+        verbose_name_plural = _("Secret audit entries")
         ordering = ["-timestamp"]

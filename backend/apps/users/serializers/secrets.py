@@ -4,62 +4,99 @@ from rest_framework import serializers
 
 from ..models import UserSecret
 
+# Logical field names, without the `_encrypted` suffix. Each is written through
+# `UserSecret.set_sensitive_data`, which encrypts it and derives a blind index
+# where the model declares one.
+SENSITIVE_FIELDS = ("dni", "phone_number", "date_of_birth")
 
-class UserSecretSerializer(serializers.ModelSerializer):
-    """Serializer for managing highly sensitive user data and exchange keys.
 
-    All sensitive fields MUST be explicitly write-only.
+class UserSecretSerializer(serializers.Serializer):
+    """Writes identity data into the encrypted vault.
+
+    Every field is write-only: a stored value must never be readable back
+    through the API, only overwritten. The serializer therefore exposes no
+    output beyond a confirmation.
+
+    This replaces an earlier version accepting exchange API credentials
+    (ADR-0005). Those columns named a specific third party in what is meant to
+    be a generic template, and they were the only fields this endpoint served —
+    leaving the project's most heavily protected write with no purpose for most
+    consumers.
     """
 
-    api_key_binance_encrypted = serializers.CharField(
-        write_only=True, required=False, allow_blank=True
+    dni = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, max_length=64
     )
-    api_secret_binance_encrypted = serializers.CharField(
-        write_only=True, required=False, allow_blank=True
+    phone_number = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, max_length=32
     )
+    date_of_birth = serializers.DateField(write_only=True, required=False)
 
-    class Meta:
-        model = UserSecret
-        fields = [
-            "api_key_binance_encrypted",
-            "api_secret_binance_encrypted",
-        ]
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        """Rejects a request that would write nothing.
 
-    def update(
-        self, instance: UserSecret, validated_data: dict[str, Any]
-    ) -> UserSecret:
-        """Encrypt secrets and log audit trail."""
+        Args:
+            attrs (dict[str, Any]): The validated field values.
+
+        Returns:
+            dict[str, Any]: The same values, unchanged.
+
+        Raises:
+            serializers.ValidationError: When no known field was supplied.
+        """
+        if not any(field in attrs for field in SENSITIVE_FIELDS):
+            raise serializers.ValidationError(
+                f"Provide at least one of: {', '.join(SENSITIVE_FIELDS)}."
+            )
+        return attrs
+
+    def update(self, instance: UserSecret, validated_data: dict[str, Any]) -> UserSecret:
+        """Encrypts each supplied value and records an audit entry per field.
+
+        Args:
+            instance (UserSecret): The vault being written to.
+            validated_data (dict[str, Any]): Fields to store.
+
+        Returns:
+            UserSecret: The saved instance.
+        """
         from django.apps import apps
 
-        UserSecretAudit = apps.get_model("users", "UserSecretAudit")
+        audit_model = apps.get_model("users", "UserSecretAudit")
+        ip_address = self._client_ip()
+        touched: list[str] = []
 
+        for field in SENSITIVE_FIELDS:
+            if field not in validated_data:
+                continue
+
+            raw = validated_data[field]
+            # A DateField arrives as a date object; the vault stores strings.
+            instance.set_sensitive_data(field, str(raw) if raw != "" else None)
+            touched.append(field)
+
+            audit_model.objects.create(
+                user=instance.user,
+                field_affected=field,
+                action_type="UPDATE",
+                ip_address=ip_address,
+            )
+
+        instance.save()
+        self._touched = touched
+        return instance
+
+    def _client_ip(self) -> str | None:
+        """Extracts the caller's IP, preferring the first proxy hop.
+
+        Returns:
+            str | None: The client address, or None outside a request context.
+        """
         request = self.context.get("request")
-        ip_address = None
-        if request:
-            x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-            if x_forwarded_for:
-                ip_address = x_forwarded_for.split(",")[0]
-            else:
-                ip_address = request.META.get("REMOTE_ADDR")
+        if not request:
+            return None
 
-        api_key = validated_data.pop("api_key_binance_encrypted", None)
-        api_secret = validated_data.pop("api_secret_binance_encrypted", None)
-
-        if api_key is not None:
-            instance.set_sensitive_data("api_key_binance", api_key)
-            UserSecretAudit.objects.create(
-                user=instance.user,
-                field_affected="api_key_binance",
-                action_type="UPDATE",
-                ip_address=ip_address,
-            )
-        if api_secret is not None:
-            instance.set_sensitive_data("api_secret_binance", api_secret)
-            UserSecretAudit.objects.create(
-                user=instance.user,
-                field_affected="api_secret_binance",
-                action_type="UPDATE",
-                ip_address=ip_address,
-            )
-
-        return super().update(instance, validated_data)
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")

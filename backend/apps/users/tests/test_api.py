@@ -86,7 +86,7 @@ class TestUserAPI:
         url = reverse("users:user-secrets")
         # Should fail with 403 because no Step-Up session exists yet (SessionAuth)
         response = client.patch(
-            url, {"api_key_binance_encrypted": "test"}, content_type="application/json"
+            url, {"dni": "12345678Z"}, content_type="application/json"
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -110,7 +110,7 @@ class TestUserAPI:
         # Now secrets should be accessible
         url = reverse("users:user-secrets")
         response = client.patch(
-            url, {"api_key_binance_encrypted": "xyz"}, content_type="application/json"
+            url, {"dni": "87654321X"}, content_type="application/json"
         )
         assert response.status_code == status.HTTP_200_OK
 

@@ -107,9 +107,8 @@ class SoftDeleteQuerySet(models.QuerySet):
                     secrets.date_of_birth_encrypted = None
                     secrets.phone_number_encrypted = None
                     secrets.phone_number_index = None
-                    secrets.api_key_binance_encrypted = None
-                    secrets.api_key_binance_index = None
-                    secrets.api_secret_binance_encrypted = None
+                    secrets.verification_otp_encrypted = None
+                    secrets.verification_otp_expires_at = None
                     secrets.otp_secret_key = None
                     secrets.otp_recovery_codes = None
                     secrets.save()

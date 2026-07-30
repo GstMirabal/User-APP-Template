@@ -59,7 +59,7 @@ def test_jwt_client_is_denied_without_step_up() -> None:
 
     response = client.patch(
         SECRETS_URL,
-        {"api_key_binance_encrypted": "x"},
+        {"dni": "11111111H"},
         content_type="application/json",
         **_bearer(user),
     )
@@ -88,7 +88,7 @@ def test_jwt_client_reaches_secrets_after_reauth() -> None:
 
     response = client.patch(
         SECRETS_URL,
-        {"api_key_binance_encrypted": "secret-value"},
+        {"dni": "12345678Z"},
         content_type="application/json",
         **headers,
     )
@@ -118,7 +118,7 @@ def test_jwt_client_denied_after_window_expires() -> None:
 
     response = client.patch(
         SECRETS_URL,
-        {"api_key_binance_encrypted": "x"},
+        {"dni": "11111111H"},
         content_type="application/json",
         **headers,
     )
@@ -164,7 +164,7 @@ def test_session_client_still_works(client) -> None:
 
     response = client.patch(
         SECRETS_URL,
-        {"api_key_binance_encrypted": "x"},
+        {"dni": "11111111H"},
         content_type="application/json",
     )
 
