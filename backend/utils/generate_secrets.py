@@ -20,6 +20,11 @@ def generate_encryption_pepper():
     return secrets.token_hex(32)
 
 
+def generate_jwt_signing_key():
+    """Generates a signing key for JWT access and refresh tokens (ADR-0003)."""
+    return secrets.token_urlsafe(64)
+
+
 def generate_postgres_password():
     """Generates a secure random password."""
     alphabet = string.ascii_letters + string.digits
@@ -38,6 +43,7 @@ def main():
     print("\n[security]")
     print(f'MASTER_KEY = "{generate_master_key()}"')
     print(f'ENCRYPTION_PEPPER = "{generate_encryption_pepper()}"')
+    print(f'JWT_SIGNING_KEY = "{generate_jwt_signing_key()}"')
 
     print("\n[DB] (Optional generated password)")
     print(f'POSTGRES_PASSWORD = "{generate_postgres_password()}"')

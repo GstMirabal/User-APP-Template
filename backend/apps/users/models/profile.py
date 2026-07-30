@@ -5,7 +5,11 @@ from .user import User
 
 
 class UserProfile(models.Model):
-    """User profile containing preferences, configuration, and consent."""
+    """Preferences, presentation data and legal consent for a user.
+
+    Created automatically by the `post_save` receiver on `User`, inside the
+    same transaction, so a live user always has one.
+    """
 
     class UserRole(models.TextChoices):
         FREE = "free", _("Free")
@@ -16,51 +20,51 @@ class UserProfile(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="profile",
-        verbose_name=_("Usuario"),
+        verbose_name=_("User"),
     )
     role = models.CharField(
-        _("Rol de usuario"),
+        _("User role"),
         max_length=15,
         choices=UserRole.choices,
         default=UserRole.FREE,
     )
 
-    # Preferencias
-    timezone = models.CharField(_("Zona Horaria"), max_length=100, default="UTC")
+    # Preferences
+    timezone = models.CharField(_("Time zone"), max_length=100, default="UTC")
     preferred_currency = models.CharField(
-        _("Moneda Preferida"), max_length=10, default="USD"
+        _("Preferred currency"), max_length=10, default="USD"
     )
-    language_code = models.CharField(_("Idioma"), max_length=10, default="en-us")
+    language_code = models.CharField(_("Language"), max_length=10, default="en-us")
     avatar = models.ImageField(_("Avatar"), upload_to="avatars/", blank=True, null=True)
-    bio = models.TextField(_("Biografía"), blank=True, null=True)
+    bio = models.TextField(_("Biography"), blank=True, null=True)
     email_notifications_enabled = models.BooleanField(
-        _("Notificaciones por email"), default=True
+        _("Email notifications enabled"), default=True
     )
 
-    # Consentimiento Legal
+    # Legal consent
     accepted_terms_at = models.DateTimeField(
-        _("Términos aceptados el"), blank=True, null=True
+        _("Terms accepted at"), blank=True, null=True
     )
     accepted_privacy_policy_at = models.DateTimeField(
-        _("Privacidad aceptada el"), blank=True, null=True
+        _("Privacy policy accepted at"), blank=True, null=True
     )
     marketing_consent = models.BooleanField(
-        _("Consentimiento de marketing"), default=False
+        _("Marketing consent"), default=False
     )
     registration_data = models.JSONField(
-        _("Datos de registro"), default=dict, blank=True
+        _("Registration metadata"), default=dict, blank=True
     )
     last_activity_at = models.DateTimeField(
-        _("Última actividad"), blank=True, null=True
+        _("Last activity at"), blank=True, null=True
     )
     deleted_at = models.DateTimeField(
-        _("Fecha de borrado"), blank=True, null=True, default=None
+        _("Deleted at"), blank=True, null=True, default=None
     )
 
     class Meta:
         app_label = "users"
-        verbose_name = _("Perfil de Usuario")
-        verbose_name_plural = _("Perfiles de Usuario")
+        verbose_name = _("User profile")
+        verbose_name_plural = _("User profiles")
 
     def __str__(self) -> str:
-        return f"Perfil de {self.user.username}"
+        return f"Profile for {self.user.username}"

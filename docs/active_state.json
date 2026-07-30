@@ -8,26 +8,30 @@
     "onboarding_sprint": "000"
   },
   "current_sprint": {
-    "id": "000",
-    "slug": "000-backend-identity",
+    "id": "003",
+    "slug": "003-backend-generalization",
     "status": "CLOSED",
     "stack": "backend",
-    "layer": "identity",
-    "last_audit_sprint": 0,
+    "layer": "generalization",
+    "last_audit_sprint": 3,
     "last_audit_date": "2026-07-30",
-    "last_audit_commit_sha": "b27b5c2"
+    "last_audit_commit_sha": "ec5108c"
   },
-  "active_layer": "identity",
+  "active_layer": "generalization",
   "active_app": "users",
   "topology_map": [
+    ".github/workflows/",
     "backend/",
     "backend/apps/core/",
+    "backend/apps/core/tests/",
     "backend/apps/users/",
     "backend/apps/users/models/",
     "backend/apps/users/serializers/",
+    "backend/apps/users/tests/",
     "backend/config/",
-    "backend/utils/",
+    "backend/config/settings/",
     "backend/scripts/",
+    "backend/utils/",
     "docs/architecture/",
     "docs/contracts/",
     "docs/decisions/",
@@ -37,14 +41,24 @@
     "docs/walkthroughs/"
   ],
   "code_containers": [
-    {"stack": "backend", "root": "backend/apps/"}
+    {
+      "stack": "backend",
+      "root": "backend/apps/"
+    }
   ],
-  "adr_autoescalate_triggers": [1, 3, 5, 7],
+  "adr_autoescalate_triggers": [
+    1,
+    3,
+    5,
+    7
+  ],
   "c4_level_3": {
     "mode": "advisory",
     "reason": "documentation_standard.md 2.1 bootstrap - first run on this project",
     "computed_at_sprint": "000",
-    "qualifying_containers": ["users"],
+    "qualifying_containers": [
+      "users"
+    ],
     "densities": {
       "users": 2.89,
       "core": 1.78
@@ -58,6 +72,9 @@
     "database": "PostgreSQL 15",
     "auth": "SimpleJWT + django-axes",
     "linter": "ruff",
-    "type_checker": "mypy (strict)"
+    "type_checker": "mypy (strict)",
+    "ci": "GitHub Actions",
+    "test_runner": "pytest + pytest-django (in-RAM SQLite)",
+    "cache": "Redis 7 (shared; LocMem fallback in DEBUG only)"
   }
 }

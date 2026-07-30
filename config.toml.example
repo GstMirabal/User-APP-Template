@@ -48,6 +48,31 @@ CORS_ALLOWED_ORIGINS = "$CORS_ALLOWED_ORIGINS"
 MASTER_KEY = "$MASTER_KEY"
 ENCRYPTION_PEPPER = "$ENCRYPTION_PEPPER"
 
+# --- Signing key for JWT access/refresh tokens (ADR-0003) ---
+# Kept separate from DJANGO_SECRET_KEY so the two rotate independently and a
+# disclosure of one does not imply the other. If left empty the project falls
+# back to DJANGO_SECRET_KEY and logs a warning at startup.
+JWT_SIGNING_KEY = "$JWT_SIGNING_KEY"
+
+
+# ==============================================================================
+#                       CACHE SETTINGS
+# ==============================================================================
+# The cache is a security dependency, not an optimisation (ADR-0001): TOTP
+# anti-replay and step-up authentication store short-lived state that must be
+# shared across workers. Required whenever DEBUG is False.
+[cache]
+
+# --- Connection URL for the shared cache backend ---
+# docker-compose maps Redis to host port 6381: "redis://127.0.0.1:6381/0"
+REDIS_URL = "$REDIS_URL"
+
+# --- Seconds a re-authentication stays valid for step-up gated endpoints ---
+STEP_UP_WINDOW_SECONDS = "$STEP_UP_WINDOW_SECONDS"
+
+# --- Minutes a registration verification code stays valid (ADR-0004) ---
+VERIFICATION_OTP_TTL_MINUTES = "$VERIFICATION_OTP_TTL_MINUTES"
+
 
 # ==============================================================================
 #                       DATABASE COMPONENTS

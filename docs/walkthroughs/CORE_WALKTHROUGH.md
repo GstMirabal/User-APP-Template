@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: CORE
 **File**: `docs/walkthroughs/CORE_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #000
+**Last updated**: Sprint #003
 
 ---
 
@@ -11,12 +11,19 @@
 | pre-#000 | Password complexity validator | Four coded rules (upper, lower, digit, symbol) registered in `AUTH_PASSWORD_VALIDATORS`. |
 | pre-#000 | Health endpoint | `/health/` probing PostgreSQL and the cache independently. |
 | #000 | Retroactive documentation | Module reverse-engineered into `docs/architecture/CORE_BLUEPRINT.md`. |
+| #001 | Health endpoint repaired | `status=` replaces the invalid `status_code=`; healthy and degraded paths both covered by tests. |
+| #001 | Admin-integrity system check | `apps/core/checks.py` (`core.E001`) constructs every registered admin form and inline formset at startup. |
+| #002 | Health probe reports on a real backend | With `CACHES` configured (ADR-0001), the cache probe exercises Redis instead of an in-process dict that cannot fail. |
 
 ## 2. Current state
 
-`PasswordComplexityValidator` is correct and thoroughly documented in Google style; it is wired into settings and runs on every registration.
+Both components work and are covered by tests.
 
-`HealthCheckView` is **broken at runtime**. `backend/apps/core/views.py:44` returns `Response(status, status_code=status_code)`, but DRF's `Response.__init__` signature is `(self, data=None, status=None, template_name=None, headers=None, exception=False, content_type=None)` — there is no `status_code` keyword. Every request to `/health/` therefore raises `TypeError` and yields HTTP 500, including the healthy path. Verified by inspecting the installed DRF signature in `venv/`.
+`PasswordComplexityValidator` is correct, documented in Google style, and wired into `AUTH_PASSWORD_VALIDATORS`.
+
+`HealthCheckView` returns 200 with every dependency reachable and 503 when either the database or the cache fails, each probed independently. The `status_code=` defect is fixed and pinned by three tests.
+
+`apps/core/checks.py` adds what Django does not provide: a check that actually builds every registered `ModelAdmin` form and `InlineModelAdmin` formset. It reports a `FieldError` as `core.E001` and any other construction failure as `core.W001`, since the latter may be an artefact of the check's request stub rather than a real defect.
 
 Implements: `docs/architecture/CORE_BLUEPRINT.md`.
 
@@ -24,10 +31,8 @@ Implements: `docs/architecture/CORE_BLUEPRINT.md`.
 
 | Item | Severity | Marked as | Tracked where |
 | :--- | :--- | :--- | :--- |
-| `HealthCheckView.get` passes an invalid `status_code=` kwarg to DRF `Response`; `/health/` returns HTTP 500 unconditionally. Also shadows the module-level name `status` (the DRF status module) with a local dict. | **Blocker** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| `HealthCheckView.get` has no type hints on `request` or its return value — violates `agents.md §1 Types` (mandatory hints on all args and return values). | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| `backend/apps/core/tests.py` (59 lines) cannot be collected — same missing `pytest-django` configuration as `users`. | **Blocker** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| A degraded-dependency response has never been exercised, since the endpoint fails before reaching it. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
+| The health endpoint is unauthenticated and reports which subsystem is down, which is mild reconnaissance value for an attacker. Standard for a liveness probe, but worth restricting at the ingress. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-9 |
+| `test_config.py` still mixes Django `TestCase` with the pytest idiom used everywhere else, and `test_settings_load_correctly` asserts `True`. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
 
 ## 4. How to operate it
 
@@ -35,7 +40,7 @@ Implements: `docs/architecture/CORE_BLUEPRINT.md`.
 # Start the stack
 make db-up && make dev
 
-# Probe the health endpoint (currently returns 500 — see §2)
+# Probe the health endpoint (200 healthy, 503 degraded)
 curl -i http://127.0.0.1:8000/health/
 
 # Verify the password validator rules

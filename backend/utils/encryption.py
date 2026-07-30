@@ -95,8 +95,6 @@ def generate_blind_index(value: str | None) -> str | None:
     if not pepper:
         raise ValueError("ENCRYPTION_PEPPER is not configured in settings.")
 
-    # HMAC-SHA256
-    # Key: PEPPER (bytes)
-    # Message: value (bytes)
+    # HMAC-SHA256 keyed with the pepper, over the plaintext value.
     h = hmac.new(force_bytes(pepper), force_bytes(value), hashlib.sha256)
     return h.hexdigest()

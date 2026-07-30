@@ -8,50 +8,61 @@ from .models import User, UserProfile, UserSecret
 class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
-    verbose_name_plural = _("Perfil del Usuario")
+    verbose_name_plural = _("User profile")
     fk_name = "user"
     fields = (
         "role",
         "timezone",
         "preferred_currency",
         "language_code",
-        "two_factor_enabled",
     )
 
 
 class UserSecretInline(admin.StackedInline):
-    """
-    Inline paranoico para secretos.
-    NO muestra las llaves reales en el admin para evitar fugas visuales.
-    Solo permite ver si el secreto existe y está configurado.
+    """Read-only presence indicators for the secret vault.
+
+    Allow-list, not deny-list. The previous `exclude` named three fields and
+    therefore rendered the ciphertext of every other one — `dni_encrypted`,
+    `date_of_birth_encrypted`, `phone_number_encrypted`, `otp_recovery_codes`
+    — straight into the admin DOM, contradicting the docstring that claimed
+    otherwise. A deny-list also leaks again the moment a column is added,
+    which is exactly what happened.
+
+    Nothing here exposes a stored value: every field is a derived boolean or a
+    timestamp.
     """
 
     model = UserSecret
     can_delete = False
-    verbose_name_plural = _("Bóveda de Secretos (Solo Lectura)")
+    verbose_name_plural = _("Secret vault (read-only)")
     fk_name = "user"
 
-    # Excluimos API keys reales para que ni el admin pueda verlas en el DOM
-    exclude = (
-        "api_key_binance_encrypted",
-        "api_secret_binance_encrypted",
-        "otp_secret_key",
+    fields = (
+        "has_identity_data",
+        "has_two_factor",
+        "phone_verified_at",
+        "updated_at",
     )
+    readonly_fields = fields
 
-    readonly_fields = ("has_binance_keys",)
+    @admin.display(boolean=True, description=_("Identity data stored"))
+    def has_identity_data(self, obj: UserSecret) -> bool:
+        """Reports whether any encrypted identity field is populated."""
+        return bool(
+            obj.dni_encrypted
+            or obj.date_of_birth_encrypted
+            or obj.phone_number_encrypted
+        )
 
-    def has_binance_keys(self, obj):
-        return bool(obj.api_key_binance_encrypted and obj.api_secret_binance_encrypted)
-
-    has_binance_keys.boolean = True
-    has_binance_keys.short_description = _("Binance Keys Configuradas")
+    @admin.display(boolean=True, description=_("Two-factor configured"))
+    def has_two_factor(self, obj: UserSecret) -> bool:
+        """Reports whether a TOTP secret is present."""
+        return bool(obj.otp_secret_key)
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """
-    Administración central de usuarios blindada.
-    """
+    """Hardened central administration for user accounts."""
 
     inlines = (UserProfileInline, UserSecretInline)
 
@@ -77,16 +88,17 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
         (
-            _("Información Personal"),
+            _("Personal information"),
             {"fields": ("first_name", "last_name", "last_ip_address")},
         ),
         (
-            _("Permisos y Estado"),
+            _("Permissions and status"),
             {
                 "fields": (
                     "is_active",
                     "is_verified",
                     "is_suspended",
+                    "two_factor_enabled",
                     "is_staff",
                     "is_superuser",
                     "groups",
@@ -95,7 +107,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         (
-            _("Auditoría"),
+            _("Audit"),
             {
                 "fields": (
                     "date_joined",
@@ -118,8 +130,8 @@ class UserAdmin(BaseUserAdmin):
     def get_role(self, obj):
         return obj.profile.role if hasattr(obj, "profile") else "-"
 
-    get_role.short_description = _("Rol")
+    get_role.short_description = _("Role")
 
     def has_delete_permission(self, request, obj=None):
-        """Bloqueo de borrado destructivo desde el admin (Usar Anonymize/SoftDelete)."""
+        """Blocks destructive deletion; anonymisation is the sanctioned path."""
         return False

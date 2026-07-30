@@ -2,9 +2,9 @@
 **File**: `docs/architecture/USERS_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
@@ -25,7 +25,7 @@ The `users` module is the identity domain of User-APP-Template. It owns the cust
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `tasks.py`, `admin.py`, `urls.py`, `migrations/`. |
+| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `step_up.py`, `admin.py`, `urls.py`, `migrations/`. |
 | **Must not touch** | `backend/config/settings.py`, `backend/apps/core/`, `backend/utils/encryption.py` (consumes, never edits), other apps' migrations. |
 
 Contracts (formal interfaces this module exposes):
@@ -47,7 +47,7 @@ Data model (summary only — full schemas belong in the contract):
 - **`Address`**: reusable postal address; referenced twice by `User` (`billing_address`, `shipping_address`, both `SET_NULL`).
 - **`User`** (`AbstractUser`): UUID PK, unique `email` (the `USERNAME_FIELD`), unique `username`; security telemetry (`last_ip_address`, `failed_login_attempts`, `password_changed_at`); lifecycle flags (`is_verified`, `two_factor_enabled`, `is_suspended`, `is_anonymized`, `deleted_at`). Indexed on `email` and `username`.
 - **`UserProfile`** (1:1 `User`, `CASCADE`): `role` (`free`/`premium`/`admin`), locale preferences, avatar, bio, legal-consent timestamps, `registration_data` JSON, `deleted_at`.
-- **`UserSecret`** (1:1 `User`, `CASCADE`): Fernet-encrypted `*_encrypted` columns paired with HMAC-SHA256 `*_index` blind-index columns for exact-match lookup (`dni`, `phone_number`, `api_key_binance`); plus `otp_secret_key` and `otp_recovery_codes`.
+- **`UserSecret`** (1:1 `User`, `CASCADE`): Fernet-encrypted `*_encrypted` columns paired with HMAC-SHA256 `*_index` blind-index columns for exact-match lookup (`dni`, `phone_number`); plus `date_of_birth_encrypted`, `otp_secret_key`, `otp_recovery_codes`, and `verification_otp_encrypted` / `verification_otp_expires_at`. Exchange-specific columns were removed in ADR-0005.
 - **`UserSecretAudit`** (FK `User`, `CASCADE`): append-only trail of `field_affected` / `action_type` / `timestamp` / `ip_address`, ordered newest-first.
 
 Manager layer:
@@ -63,17 +63,17 @@ Manager layer:
 1. `POST /register/` → `UserRegistrationSerializer` validates password against `AUTH_PASSWORD_VALIDATORS` (including `PasswordComplexityValidator` from `core`) and confirms `password == password_confirm`.
 2. `User.objects.create_user()` normalizes/lowercases the email and saves inside `transaction.atomic()`.
 3. `post_save` receiver `create_user_profile_and_secrets` creates `UserProfile` + empty `UserSecret` atomically, and registers a `transaction.on_commit` hook for the welcome email.
-4. `VerificationService.initialize_verification_flow(user)` generates a 6-digit OTP and logs it (mock delivery).
+4. `VerificationService.initialize_verification_flow(user)` generates a CSPRNG 6-digit OTP, stores it Fernet-encrypted in `verification_otp_encrypted` with an expiry, and returns it for out-of-band delivery. The code is never logged.
 5. Response `201` with `user_id` and `email`.
 
 **Flow 2 — Account verification**
 1. `POST /verify/` with `email` + `code`.
-2. `VerificationService.verify_account` compares against the stored `OTP_PENDING:<code>` marker; on match sets `is_verified = True` and clears the marker.
+2. `VerificationService.verify_account` rejects an expired code, compares in constant time, then sets `is_verified = True`, clears both OTP columns and appends a `UserSecretAudit` entry.
 
 **Flow 3 — Writing a secret (step-up gated)**
-1. `POST /me/reauth/` with the current password → stores `step_up_timestamp` in the Django session.
-2. `PATCH /me/secrets/` passes `IsAuthenticated` + `IsVerified` + `RequiresStepUp` (session timestamp under 5 minutes old).
-3. `UserSecretSerializer.update` calls `set_sensitive_data()`, which Fernet-encrypts the value and derives an HMAC-SHA256 blind index, then appends a `UserSecretAudit` row carrying the client IP (`HTTP_X_FORWARDED_FOR` first hop, else `REMOTE_ADDR`).
+1. `POST /me/reauth/` re-authenticates through `django.contrib.auth.authenticate`, so `AxesBackend` counts the attempt. On success `step_up.grant` records the timestamp in the shared cache, and in the session when one already exists (ADR-0002).
+2. `PATCH /me/secrets/` passes `IsAuthenticated` + `IsVerified` + `RequiresStepUp`, which accepts either backend within `STEP_UP_WINDOW_SECONDS`.
+3. `UserSecretSerializer.update` writes each supplied field from `SENSITIVE_FIELDS` (`dni`, `phone_number`, `date_of_birth`) through `set_sensitive_data()`, which Fernet-encrypts it and derives an HMAC-SHA256 blind index where the model declares one, then appends a `UserSecretAudit` row per field carrying the client IP (`HTTP_X_FORWARDED_FOR` first hop, else `REMOTE_ADDR`).
 
 **Flow 4 — TOTP enrolment**
 1. `POST /me/2fa/setup/` — rejected if `two_factor_enabled` is already true; otherwise generates a base32 secret, 8 recovery codes (stored encrypted as CSV), and returns the `otpauth://` provisioning URI.
@@ -102,18 +102,27 @@ Manager layer:
 | Secrets are never readable through the API. | Every field in `UserSecretSerializer` declares `write_only=True`. |
 | Anonymization is irreversible. | `SoftDeleteQuerySet.restore()` filters `is_anonymized=False`, so anonymized rows can never be restored. |
 | Audit history cannot be physically deleted. | `AuditQuerySet.hard_delete()` raises `NotImplementedError`. |
-| A TOTP token cannot be replayed inside its window. | Cache key `totp_used_<user_id>_<token>` set for 60 s in `VerificationService.verify_2fa`. |
+| A TOTP token cannot be replayed inside its window, across workers. | Cache key `totp_used_<user_id>_<token>` set for 60 s, on the shared backend required by ADR-0001. |
+| Credentials must come from a CSPRNG, never `random`. | `test_verification.py::test_generator_does_not_use_the_random_module`. |
+| A verification code expires. | `verification_otp_expires_at` is enforced in `verify_account`. |
+| Step-up gated endpoints must be reachable by both client styles. | `test_step_up.py` covers session and bearer-token paths. |
+| The admin must never render a stored secret value. | `UserSecretInline.fields` is an allow-list of derived indicators; `test_admin_does_not_render_secret_ciphertext`. |
 | Satellite models always exist for a live user. | `post_save` receiver runs inside `transaction.atomic()`; failure rolls the user creation back. |
 | `MASTER_KEY` and `ENCRYPTION_PEPPER` must be present at boot. | `backend/config/settings.py:163-166` raises `ValueError` when either is unset. |
 
 ## 7. Decisions
 
-This module's ADR log — link, don't restate. No ADRs exist yet; the decisions below were inherited undocumented and are candidates for retroactive records (`rules/documentation_standard.md §3.1` triggers in brackets):
+This module's ADR log — link, don't restate:
 
-- _(pending)_ Fernet + HMAC blind index for searchable encrypted PII — trigger #3 (security/privacy boundary).
+- `docs/decisions/ADR-0002-hybrid-step-up-authentication.md`: step-up resolves through the session and a shared-cache grant, so token clients can reach gated endpoints.
+- `docs/decisions/ADR-0004-dedicated-encrypted-otp-storage.md`: the verification code gets its own encrypted column with an expiry, instead of overwriting a credential column in plaintext.
+- `docs/decisions/ADR-0005-generic-secret-vault.md`: exchange-specific columns removed; the vault and its endpoint serve generic identity data.
+
+Still undocumented, inherited (retroactive candidates, `§3.1` triggers in brackets):
+
+- _(pending)_ Fernet + HMAC blind index for searchable encrypted PII — trigger #3.
 - _(pending)_ Soft deletion plus irreversible anonymization as the GDPR strategy — triggers #1 and #3.
-- _(pending)_ Session-backed step-up authentication alongside stateless JWT — trigger #3.
-- _(pending)_ Email as `USERNAME_FIELD` with UUID primary key — trigger #2 (contract consumed by other containers).
+- _(pending)_ Email as `USERNAME_FIELD` with UUID primary key — trigger #2.
 
 ## 8. Glossary
 

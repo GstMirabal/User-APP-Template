@@ -59,14 +59,6 @@ def create_user_profile_and_secrets(
                 # 2. Create UserSecret (Empty vault)
                 UserSecret.objects.create(user=instance)
 
-                # 3. Post-transaction processes (Welcome Emails, etc.)
-                def send_welcome_email() -> None:
-                    """Logic for sending a welcome email via Celery/Background task."""
-                    # Example: send_welcome_email_task.delay(instance.id)
-                    pass
-
-                transaction.on_commit(send_welcome_email)
-
         except Exception as e:
             # Atomic rollback is automatic, but we re-raise for awareness.
             raise e

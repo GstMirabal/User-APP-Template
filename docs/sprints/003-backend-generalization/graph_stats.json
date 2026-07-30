@@ -1,0 +1,8 @@
+{
+  "sprint_id": "003",
+  "nodes": 3501,
+  "edges": 3674,
+  "communities": 428,
+  "built_at_commit": "ec5108c633d6cec85f378be732919dcd80df131a",
+  "captured_date": "2026-07-30"
+}

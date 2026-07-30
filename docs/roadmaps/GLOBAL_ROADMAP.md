@@ -1,53 +1,85 @@
 # 🗺️ Global Roadmap: User-APP-Template
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
-Backlog derived from the Sprint #000 Scenario C reverse-engineering audit. Every item traces to a verified finding in a Walkthrough §3 — nothing here is speculative. Priorities are execution order, not importance rankings.
+Backlog derived from the Sprint #000 reverse-engineering audit and extended by findings surfaced during execution. Every item traces to a verified finding in a Walkthrough §3 — nothing here is speculative. Priorities are execution order, not importance rankings.
 
-## P0 — Blockers (the Quality Gate cannot pass until these clear)
+## ✅ Completed
 
-| # | Item | Module | Evidence |
-| :--- | :--- | :--- | :--- |
-| P0-1 | Restore an executable test harness: add `[tool.pytest.ini_options]` with `DJANGO_SETTINGS_MODULE = "config.settings"` and `pythonpath = ["backend"]`, install `pytest-django`, and point `make test` at the whole suite rather than one file. | `config` | `pytest` aborts at collection with `ImproperlyConfigured`. |
-| P0-2 | Fix `HealthCheckView.get` — replace the invalid `status_code=` kwarg with `status=`, and rename the local `status` dict so it stops shadowing the DRF `status` module. | `core` | DRF `Response.__init__` has no `status_code` parameter; `/health/` returns 500 unconditionally. |
-| P0-3 | Clear the 79 `ruff` findings (or justify each ignore in the authoritative `ruff.toml`). | all | `agents.md §1 linter_command` rejects exit code > 0. |
-| P0-4 | Decide and implement a step-up mechanism that works under stateless JWT — the session-backed timestamp is unreachable for JWT-only clients, making `/me/secrets/` and `/me/anonymize/` dead endpoints for them. **Requires an ADR** (trigger #3). | `users` | `RequiresStepUp` reads `request.session`; DRF also accepts `JWTAuthentication`. |
-| P0-5 | Give the registration OTP its own storage instead of overwriting `api_key_binance_encrypted`, and route it through `set_sensitive_data()` so it is actually encrypted. **Requires an ADR** (trigger #3). | `users` | `VerificationService.initialize_verification_flow` writes plaintext `OTP_PENDING:<code>` into an `_encrypted` column. |
-| P0-6 | Separate `SIMPLE_JWT["SIGNING_KEY"]` from `SECRET_KEY`. **Requires an ADR** (trigger #3). | `config` | One secret currently serves both session signing and JWT forgery resistance. |
+### Sprint #001 — verification capability
 
-## P1 — Structural debt
+| # | Item |
+| :--- | :--- |
+| P0-1 | Executable test harness (in-RAM SQLite); suite 0 → 52 |
+| P0-2 | `HealthCheckView` returns 200/503 instead of raising `TypeError` |
+| P0-3 | Zero `ruff` findings; configuration unified in `ruff.toml` |
+| P0-10 | Admin `FieldError` fixed; `core.E001` system check prevents recurrence |
+| P0-11 | Application logging reaches handlers |
+| P0-12 | Production mode reachable — `DEBUG` boolean coercion |
+| — | CI pipeline gating lint, checks, tests, production smoke |
+
+### Sprint #002 — security
+
+| # | Item | ADR |
+| :--- | :--- | :--- |
+| P0-4 | Step-up authentication reachable for stateless JWT clients | ADR-0002 |
+| P0-5 | Verification OTP in its own encrypted column, with expiry | ADR-0004 |
+| P0-6 | JWT signing key separated from `SECRET_KEY` | ADR-0003 |
+| P0-7 | Redis as shared cache; TOTP anti-replay holds across workers | ADR-0001 |
+| P0-8 | `/me/reauth/` routed through the auth backend, so Axes applies | — |
+| P0-9 | `UserSecretInline` converted to an allow-list | — |
+| P0-13 | Verification code no longer logged | ADR-0004 |
+| P0-14 | OTP and 2FA recovery codes moved off `random` to `secrets` | — |
+| P1-6 | `pwned-passwords-django` wired into the validator chain | — |
+
+### Sprint #003 — generalization
+
+| # | Item | ADR |
+| :--- | :--- | :--- |
+| P1-2 | Every Spanish string in code translated to English | — |
+| P1-3 | Exchange-specific columns removed; vault and endpoint generalised | ADR-0005 |
+| P1-4 | `setup_2fa` is a `@staticmethod` | — |
+| P1-5 | Celery stub and inert closure deleted | — |
+| P1-7 | `settings.py` split into a package of six modules | — |
+| P2-2 | Customization guide: identity core vs optional extras | — |
+| P2-6 | `requirements.txt` split into runtime and development sets | — |
+| P2-10 | README refreshed for the current setup | — |
+
+**No P0 items remain open.**
+
+## P1 — Structural debt (Sprint #004)
 
 | # | Item | Module |
 | :--- | :--- | :--- |
-| P1-1 | Remove the `[tool.ruff]` block from `pyproject.toml` (dead config) or consolidate onto it and delete `ruff.toml`. One authority, not two. | `config` |
-| P1-2 | Translate every Spanish string in code — `verbose_name`, `__str__`, docstrings, comments — to English per `agents.md §1 code_logic`. | `users` |
-| P1-3 | Generalize or remove the `api_key_binance_*` / `api_secret_binance_*` columns; they are exchange-specific residue in a generic IAM template. Requires a migration → **ADR** (trigger #1). | `users` |
-| P1-4 | Make `VerificationService.setup_2fa` a `@staticmethod` with a correct `user: User` parameter, matching its siblings. | `users` |
-| P1-5 | Wire Celery properly (`config/celery_app.py` + broker) or delete the stub and the dead `send_welcome_email` closure. Half-wired async is worse than none. | `users` |
-| P1-6 | Add the missing type hints on `HealthCheckView.get` (`agents.md §1 Types`). | `core` |
-| P1-7 | Split `settings.py` (572 lines) into a settings package by concern: base, security, third-party, logging. | `config` |
-| P1-8 | Author the retroactive ADRs listed in each Blueprint §7 — the inherited architecture currently has zero recorded rationale. | all |
+| P1-8 | Author the retroactive ADRs still listed in each Blueprint §7 (encryption strategy, GDPR anonymization, email-as-username). | all |
+| P1-9 | Verification-code resend endpoint with its own rate limiting. Expiry now exists, so an expired code currently needs administrator re-issue. | `users` |
+| P1-10 | Evaluate RS256 with a key pair. HS256 is symmetric: any verifying service must hold the minting key. Warrants its own ADR. | `config` |
 
 ## P2 — Hygiene
 
 | # | Item | Module |
 | :--- | :--- | :--- |
-| P2-1 | Move the mid-file imports in `permissions.py:41-43` to the top (`E402` ×2). | `users` |
-| P2-2 | Add `from` to the two bare re-raises inside `except` blocks (`B904`). | `users`, `utils` |
-| P2-3 | Delete the stale `views.py:174` comment promising step-up in "Phase 3" — already implemented. | `users` |
-| P2-4 | Populate `identity.config.json` and set `governed_by_agents: true`. | root |
+| P2-1 | Write the contract documents referenced by the Blueprints: `docs/contracts/{USERS,CORE,CONFIG}_CONTRACT.md`. | all |
 | P2-5 | Add `.npmrc` with `ignore-scripts=true` and `minimum-release-age=1440` before any JS/TS surface lands (RA-10). | root |
-| P2-6 | Write the contract documents referenced by the Blueprints: `docs/contracts/{USERS,CORE,CONFIG}_CONTRACT.md`. | all |
+| P2-7 | Unify the test suite on the pytest idiom, replace `assertTrue(True)` with real assertions, resolve the hardcoded `/2fa/activate/` URL. | `core`, `users` |
+| P2-8 | Apply `ruff format` repo-wide as a standalone mechanical commit, then enable `ruff format --check` as a CI gate. | all |
+| P2-9 | Consider restricting `/health/` at the ingress; it is unauthenticated and names which subsystem is degraded. | `core` |
 
-## Deferred / open questions
+## Upstream (`.agents` framework)
+
+| # | Item | Status |
+| :--- | :--- | :--- |
+| U-1 | `on_commit.py` secret scanner matched the bare substring `PASSWORD =`, blocking every commit touching authentication code while catching no real leak. Now requires a string *literal* assigned to a secret-named identifier, and additionally detects `MASTER_KEY`, `SIGNING_KEY` and `ENCRYPTION_PEPPER`. | ✅ Pushed to `origin/fix/secret-scanner-false-positives` (`624a6b4`). Open a PR against the `.agents` default branch when convenient. |
+
+## Open questions
 
 | Question | Owner |
 | :--- | :--- |
-| Is this repository intended as a reusable template or as a running product? The answer changes whether P1-3 is a deletion or a generalization. | Human |
-| Should `.agents` remain pinned to the personal `GstMirabal/.agents` remote, or track an upstream nucleus? | Human |
+| Should `.agents` remain pinned to the personal `GstMirabal/.agents` remote, or track a separate upstream nucleus? | Human |
+| Is a per-device step-up scope needed? The current grant is per user and applies to all their concurrent sessions (ADR-0002 §3). | Human |
 
 ---
 *Updated at every Sprint Closeout (RA-05). Items move to a Sprint folder when scheduled, never executed directly from this file.*

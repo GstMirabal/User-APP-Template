@@ -43,3 +43,6 @@ schema.json
 /.claude/skills/
 /.claude/settings.local.json
 /graphify-out/
+
+# .agents ephemeral memory (agents.md §4 ephemeral_memory) — purged at sprint close
+/memory/

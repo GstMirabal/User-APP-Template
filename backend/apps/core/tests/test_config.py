@@ -55,5 +55,5 @@ class ProductionSecurityHeadersTest(TestCase):
         self.assertIn("X-Content-Type-Options", response.headers)
         self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
 
-        # NOTE: HSTS header is only sent over HTTPS, so we don't test for it here.
-        # self.assertIn('Strict-Transport-Security', response.headers)
+        # HSTS is only emitted over HTTPS, which the test client does not
+        # speak, so it is asserted in the CI production-settings smoke step.

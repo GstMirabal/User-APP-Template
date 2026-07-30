@@ -60,7 +60,9 @@ class TestUserAPI:
         )
 
         user = User.objects.get(email="verify@user-app-template.com")
-        otp = user.secrets.api_key_binance_encrypted.split(":")[1]
+        # The code lives in its own encrypted column (ADR-0004) and is read
+        # back through the sanctioned accessor, never off a raw field.
+        otp = user.secrets.get_sensitive_data("verification_otp")
 
         verify_url = reverse("users:user-verify")
         response = client.post(
@@ -84,7 +86,7 @@ class TestUserAPI:
         url = reverse("users:user-secrets")
         # Should fail with 403 because no Step-Up session exists yet (SessionAuth)
         response = client.patch(
-            url, {"api_key_binance_encrypted": "test"}, content_type="application/json"
+            url, {"dni": "12345678Z"}, content_type="application/json"
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -108,7 +110,7 @@ class TestUserAPI:
         # Now secrets should be accessible
         url = reverse("users:user-secrets")
         response = client.patch(
-            url, {"api_key_binance_encrypted": "xyz"}, content_type="application/json"
+            url, {"dni": "87654321X"}, content_type="application/json"
         )
         assert response.status_code == status.HTTP_200_OK
 
@@ -128,7 +130,8 @@ class TestUserAPI:
         token = totp.now()
 
         client.force_login(user)
-        # Using hardcoded path to avoid NoReverseMatch issues with nested router actions during test stabilization
+        # Hardcoded path: reverse() does not resolve nested router actions
+        # here. Tracked for cleanup in the test-suite unification sprint.
         activate_url = "/api/v1/users/me/2fa/activate/"
 
         # 1. First use: Success

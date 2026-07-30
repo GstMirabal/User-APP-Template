@@ -2,9 +2,9 @@
 **File**: `docs/architecture/CORE_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
@@ -25,7 +25,7 @@ The `core` module holds cross-cutting primitives that belong to no single busine
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/apps/core/` — `views.py`, `validators.py`, `admin.py`, `apps.py`, `models.py` (empty), `tests.py`. |
+| **Owns** | `backend/apps/core/` — `views.py`, `validators.py`, `checks.py`, `admin.py`, `apps.py`, `models.py` (empty), `tests/`. |
 | **Must not touch** | `backend/apps/users/`, `backend/config/settings.py`, `backend/utils/`. |
 
 Contracts (formal interfaces this module exposes):
@@ -34,6 +34,7 @@ Contracts (formal interfaces this module exposes):
 | :--- | :--- | :--- | :--- |
 | `GET /health/` | REST | `AllowAny` | `docs/contracts/CORE_CONTRACT.md` |
 | `PasswordComplexityValidator.validate()` | Function (Django validator protocol) | n/a | `backend/apps/core/validators.py` |
+| `core.E001` / `core.W001` | Django system check | n/a | `backend/apps/core/checks.py` |
 
 Data model: none. `backend/apps/core/models.py` is intentionally empty.
 
@@ -66,6 +67,7 @@ Data model: none. `backend/apps/core/models.py` is intentionally empty.
 | A degraded dependency must return HTTP 503, never 200. | `GET /health/` with the database container stopped (`make db-down`). |
 | Password rules must be enforced server-side, not only client-side. | `PasswordComplexityValidator` is listed in `AUTH_PASSWORD_VALIDATORS` (`backend/config/settings.py:325`). |
 | This module must declare no models. | `backend/apps/core/models.py` stays empty; `apps/core/migrations/` must not appear. |
+| Every registered admin form and inline formset must be constructible. | `manage.py check` reports `core.E001` otherwise. |
 
 ## 7. Decisions
 

@@ -1,7 +1,7 @@
 # 🧭 System Overview: User-APP-Template
-**Last Audit Sprint**: #000
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: b27b5c2
+**Last Audit Commit SHA**: ec5108c
 
 This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` requires every session to read this file before anything else. It is intentionally short — for the full component inventory, see `.agents/docs/architecture/topology_map.md`.
 
@@ -18,9 +18,11 @@ This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework a
 | **Language / Runtime** | Python 3.13 |
 | **Framework** | Django 5.x + Django REST Framework |
 | **Datastore** | PostgreSQL 15 (Docker, host port `5434`) |
+| **Cache** | Redis 7 (Docker, host port `6381`) — a security dependency, see ADR-0001 |
 | **Auth** | SimpleJWT (HS256) + `django-axes` + TOTP (`pyotp`) |
 | **API docs** | OAS 3.0 via `drf-spectacular` |
-| **Quality** | `ruff` (lint/format), `mypy --strict` |
+| **Quality** | `ruff` (lint), `mypy --strict`, `pytest` (in-RAM SQLite) |
+| **CI** | GitHub Actions — lint, system checks, tests, production-settings smoke |
 
 ## 2. Architecture at a glance (C4 Level 1-2)
 
@@ -29,8 +31,8 @@ This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework a
 ```
                     +---------------------+
    API client  ---> |                     | ---> PostgreSQL 15  (identity + encrypted PII)
-   (web / mobile)   |  User-APP-Template  | ---> Django cache    (TOTP anti-replay, health)
-                    |    IAM backend      | ---> Celery broker   (declared, not wired)
+   (web / mobile)   |  User-APP-Template  | ---> Redis 7         (TOTP anti-replay, step-up)
+                    |    IAM backend      | ---> HIBP range API  (breach-corpus password check)
    Django admin --> |                     |
                     +---------------------+
                               |
@@ -43,10 +45,11 @@ This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework a
 | Container | Path | Responsibility |
 | :--- | :--- | :--- |
 | **`users`** | `backend/apps/users/` | Identity domain: User/Profile/Secret models, registration, 2FA, anonymization. |
-| **`core`** | `backend/apps/core/` | Cross-cutting primitives: health check, password complexity validator. |
+| **`core`** | `backend/apps/core/` | Cross-cutting primitives: health check, password complexity validator, admin-integrity system check. |
 | **`config`** | `backend/config/` | Django project configuration: settings, root URLConf, WSGI/ASGI. |
 | **`utils`** | `backend/utils/` | Cryptographic helpers: Fernet encryption, HMAC blind indexing. |
 | **`db`** | `docker-compose.yml` | PostgreSQL 15 container, volume `./.docker-db-data`. |
+| **`redis`** | `docker-compose.yml` | Redis 7, no persistence. Holds TOTP anti-replay and step-up grants. |
 
 Component-level (Level 3) detail, where required, lives per-module in the relevant `[MODULE]_BLUEPRINT.md` — see `rules/documentation_standard.md §2.1`. For this project, C4 Level 3 runs in **advisory mode** (bootstrap, §2.1 rule 8); the `users` container is the single qualifying container of the `backend` stack (density 2.89 vs `core` 1.78, safety floor applied with 2 containers).
 
@@ -59,6 +62,7 @@ Component-level (Level 3) detail, where required, lives per-module in the releva
 | **Workflows** | `.agents/workflows/*.md` | Step-by-step protocols, invoked as `/agents:<name>` slash commands. |
 | **Subagents** | `.agents/agents/*.md` | The roles that execute workflow steps (Principal, Orchestrator, QA, Tester, etc.). |
 | **Skills** | `.agents/skills/*/` | Concrete tools subagents call into (linters, scaffolders, auditors). |
+| **Decisions** | `docs/decisions/ADR-*.md` | This project's own architecture decision records. |
 
 ## 4. How a session starts
 
@@ -85,6 +89,9 @@ Run `/agents:start`. It will:
 | `docs/walkthroughs/*_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
 | `docs/roadmaps/GLOBAL_ROADMAP.md` | Future | Prioritized remediation and feature backlog. |
 | `docs/sprints/000-backend-identity/` | History | The Scenario C onboarding audit record. |
+| `docs/sprints/001-backend-verification/` | History | Repair of five blocking defects; test harness and CI restored. |
+| `docs/sprints/002-backend-security/` | History | Seven P0 security defects closed; first four ADRs. |
+| `docs/decisions/ADR-*.md` | Explanation | Recorded rationale, immutable once accepted. |
 
 ## 7. Full inventory
 

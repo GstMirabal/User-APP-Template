@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: USERS
 **File**: `docs/walkthroughs/USERS_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #000
+**Last updated**: Sprint #003
 
 ---
 
@@ -15,10 +15,28 @@
 | pre-#000 | GDPR anonymization | Irreversible PII erasure through `SoftDeleteQuerySet.anonymize()`. |
 | pre-#000 | Audit trail | `UserSecretAudit` append-only log; `AuditManager` blocks physical deletion. |
 | #000 | Retroactive documentation | Module reverse-engineered into `docs/architecture/USERS_BLUEPRINT.md`. |
+| #001 | Admin repaired | `two_factor_enabled` moved to the `User` fieldset it belongs to; user pages render again. |
+| #001 | Suite made executable | The nine pre-existing tests ran for the first time and all passed; factories added. |
+| #002 | Step-up reachable via JWT | Grant resolves through session or shared cache (ADR-0002); token clients can finally reach gated endpoints. |
+| #002 | Verification code secured | Own Fernet-encrypted column with expiry, constant-time compare, audit entry (ADR-0004). |
+| #002 | Credentials use a CSPRNG | OTP and 2FA recovery codes moved off `random`. |
+| #002 | Admin secret leak closed | `UserSecretInline` converted from deny-list to allow-list of derived indicators. |
+| #002 | `/me/reauth/` under Axes | Re-authentication routed through the authentication backend, so lockout applies. |
+| #003 | Vault generalised | Exchange columns removed; `/me/secrets/` now writes `dni`, `phone_number`, `date_of_birth` (ADR-0005). |
+| #003 | Module in English | Every `verbose_name`, `__str__`, docstring and comment translated. |
+| #003 | Celery stub deleted | The framework was never wired; tasks ran synchronously behind a stub. |
 
 ## 2. Current state
 
-The identity domain is feature-complete on paper and structurally coherent: models, managers, serializers, permissions, and the `UserViewSet` all exist and import cleanly, and the encryption helpers are correct and well-documented. **However, none of it is currently verified by an executable test.** `make test` cannot collect a single test — `pytest` aborts at import with `ImproperlyConfigured: Requested setting AUTH_USER_MODEL, but settings are not configured`, because no `DJANGO_SETTINGS_MODULE` / `pytest-django` configuration exists in `pyproject.toml`. The 144 lines in `backend/apps/users/tests.py` have therefore never run in this configuration.
+The identity domain is feature-complete, verified, and — as of Sprint #002 — no longer carrying the security defects the audit found. 77 tests pass against an in-RAM database.
+
+Step-up authentication works for both client styles. This is the headline change: `PATCH /me/secrets/` and `POST /me/anonymize/` were unreachable for every bearer-token client, which is the project's own primary authentication mechanism. `/me/reauth/` now re-authenticates through the auth backend, so Axes counts failed attempts against it.
+
+The registration code has its own Fernet-encrypted column with an expiry, is compared in constant time, is recorded in `UserSecretAudit`, and is never logged. Issuing one no longer destroys a stored exchange credential. Both the code and the 2FA recovery codes come from `secrets` rather than `random`.
+
+The admin exposes derived booleans and timestamps only; no stored secret value reaches the DOM.
+
+What remains open is genericity rather than security: exchange-specific columns, Spanish strings, and the half-wired Celery stub. All are Sprint #003 work.
 
 Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 
@@ -26,18 +44,13 @@ Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 
 | Item | Severity | Marked as | Tracked where |
 | :--- | :--- | :--- | :--- |
-| Test suite cannot be collected — no `pytest-django` / `DJANGO_SETTINGS_MODULE` config. The module has zero executable verification. | **Blocker** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| Step-up authentication stores its timestamp in the Django **session**, but DRF also accepts stateless `JWTAuthentication`. A pure-JWT client has no session, so `PATCH /me/secrets/` and `POST /me/anonymize/` are permanently unreachable for it. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| `VerificationService.initialize_verification_flow` stores the registration OTP inside `api_key_binance_encrypted` — a field reserved for an exchange credential. Registering a user overwrites any stored Binance key, and `verify_account` then blanks it. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| The registration OTP is written to that field in **plaintext** (`OTP_PENDING:<code>`), bypassing `set_sensitive_data()` and therefore Fernet encryption, into a column named `_encrypted`. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0 |
-| `api_key_binance_*` / `api_secret_binance_*` columns are exchange-specific leftovers from the pre-rebrand codebase, inside a project positioned as a generic IAM template. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| `VerificationService.setup_2fa(self: User)` is an undecorated instance method annotated as if `self` were a `User`, yet invoked as `VerificationService.setup_2fa(user)`. It works only because the class attribute resolves to a plain function; every sibling method is a `@staticmethod`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| Spanish strings in `verbose_name`, `__str__`, and comments across `models/profile.py`, `models/secrets.py`, `tasks.py`, `urls.py`, `serializers/registration.py` — violates `agents.md §1 code_logic` (artifacts strictly English). | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| Celery is a stub: `config/celery_app.py` does not exist, so `tasks.py` falls back to a `CeleryStub` and every task runs synchronously as a plain function. The `send_welcome_email` closure in `signals.py` has a `pass` body. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1 |
-| `backend/apps/users/permissions.py:41` places `import` statements mid-file, after class definitions (ruff `E402`). | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2 |
-| Stale comment at `views.py:174` still says step-up will be added "inside the Step-Up Phase 3", though `RequiresStepUp` is already wired in `get_permissions`. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2 |
+| No resend endpoint for an expired verification code; recovery is administrator re-issue. Needs its own rate limiting. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-9 |
+| A step-up grant is keyed by user id, so it applies to every concurrent session of that user, and survives the client discarding its token until the window lapses (ADR-0002 §3). | Medium | `:tech-debt:` | `ADR-0002` |
+| `test_api.py` hardcodes `/api/v1/users/me/2fa/activate/` because `reverse()` does not resolve that nested router action. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
 
-No ADRs exist yet to justify any of the above as deliberate; see `USERS_BLUEPRINT.md §7` for the retroactive ADR candidates.
+**Resolved in Sprint #003**: exchange-specific columns; Spanish strings; Celery stub; `setup_2fa` shape.
+
+**Resolved in Sprint #002**: step-up unreachable via JWT; OTP plaintext in a credential column; OTP never expiring; OTP in logs; `random` for credentials; `/me/reauth/` outside Axes; admin ciphertext exposure.
 
 ## 4. How to operate it
 
@@ -51,10 +64,10 @@ make migrate
 # Run the development server
 make dev
 
-# Lint (currently 79 findings across backend/)
+# Lint (clean)
 venv/bin/ruff check backend/
 
-# Tests — CURRENTLY FAILS TO COLLECT, see §3
+# Tests — 52 passing, in-RAM SQLite, no Docker required
 make test
 ```
 ---
