@@ -23,16 +23,16 @@ def send_verification_email_task(user_id: str, otp: str) -> None:
     """
     from django.contrib.auth import get_user_model
 
-    User = get_user_model()
+    user_model = get_user_model()
 
     try:
-        user = User.objects.get(id=user_id)
+        user = user_model.objects.get(id=user_id)
 
         # Lógica de integración con el proveedor de Email (SendGrid, Mailgun, etc.)
         # Por ahora mantenemos el log de auditoría.
         logger.info(f"[CELERY] Sending OTP {otp} to user {user.email}")
 
-    except User.DoesNotExist:
+    except get_user_model().DoesNotExist:
         logger.error(
             f"[CELERY] Attempted to send verification to non-existent user {user_id}"
         )
@@ -45,13 +45,13 @@ def send_welcome_email_task(user_id: str) -> None:
     """
     from django.contrib.auth import get_user_model
 
-    User = get_user_model()
+    user_model = get_user_model()
 
     try:
-        user = User.objects.get(id=user_id)
+        user = user_model.objects.get(id=user_id)
         logger.info(f"[CELERY] Sending Welcome Email to {user.email}")
 
-    except User.DoesNotExist:
+    except user_model.DoesNotExist:
         logger.error(
             f"[CELERY] Attempted to send welcome email to non-existent user {user_id}"
         )

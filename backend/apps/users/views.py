@@ -98,7 +98,10 @@ class UserViewSet(GenericViewSet):
 
         return Response(
             {
-                "detail": "User registered successfully. Please check your email (MOCK LOG) to verify your account.",
+                "detail": (
+                    "User registered successfully. Please check your email "
+                    "(MOCK LOG) to verify your account."
+                ),
                 "user_id": user.id,
                 "email": user.email,
             },
@@ -201,7 +204,10 @@ class UserViewSet(GenericViewSet):
 
         return Response(
             {
-                "detail": "Scan this URI in your authenticator app and SAVE your recovery codes safely.",
+                "detail": (
+                    "Scan this URI in your authenticator app and SAVE your "
+                    "recovery codes safely."
+                ),
                 "otp_uri": data["otp_uri"],
                 "secret": data["secret"],
                 "recovery_codes": data["recovery_codes"],
@@ -263,7 +269,10 @@ class UserViewSet(GenericViewSet):
 
         return Response(
             {
-                "detail": "Account has been successfully anonymized and closed. Session will be terminated."
+                "detail": (
+                    "Account has been successfully anonymized and closed. "
+                    "Session will be terminated."
+                )
             },
             status=status.HTTP_200_OK,
         )

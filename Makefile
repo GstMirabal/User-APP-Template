@@ -26,7 +26,11 @@ dev:
 
 test:
 	@echo "Running tests..."
-	pytest backend/apps/users/tests.py
+	pytest
+
+check:
+	@echo "Running Django system checks..."
+	$(MANAGE) check
 
 lint:
 	@echo "Linting and Formatting..."

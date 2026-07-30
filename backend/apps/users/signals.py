@@ -61,9 +61,11 @@ def create_user_profile_and_secrets(
 
                 # 3. Post-transaction processes (Welcome Emails, etc.)
                 def send_welcome_email() -> None:
-                    """Logic for sending a welcome email via Celery/Background task."""
-                    # Example: send_welcome_email_task.delay(instance.id)
-                    pass
+                    """Placeholder for the post-commit welcome email.
+
+                    Intentionally inert: no broker is wired yet, so dispatching
+                    a task here would fail silently.
+                    """
 
                 transaction.on_commit(send_welcome_email)
 

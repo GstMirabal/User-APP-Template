@@ -32,3 +32,4 @@ pytest-django==4.10.0
 pytest-cov==6.0.0
 python-json-logger==4.0.0
 pyotp==2.9.0
+ruff==0.15.8

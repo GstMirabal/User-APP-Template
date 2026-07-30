@@ -50,7 +50,13 @@ if env_path.exists():
         for line in f:
             if line.strip() and not line.startswith("#"):
                 key, _, value = line.partition("=")
-                os.environ[key.strip()] = value.strip().strip("'").strip('"')
+                # setdefault, not assignment: a variable already present in the
+                # real environment wins over the file. Overwriting it would let
+                # a stray .env silently override the values injected into a
+                # container or CI runner.
+                os.environ.setdefault(
+                    key.strip(), value.strip().strip("'").strip('"')
+                )
 
 try:
     with config_path.open("r", encoding="utf-8") as f:
@@ -85,7 +91,45 @@ except (KeyError, ValueError) as e:
 # SECURITY WARNING: Never run with debug turned on in production!
 # Documentation: https://docs.djangoproject.com/en/5.2/ref/settings/#debug
 # ------------------------------------------------------------------------------
-DEBUG = config["django_settings"].get("DEBUG")
+_TRUE_VALUES = frozenset({"true", "1", "yes", "on"})
+_FALSE_VALUES = frozenset({"false", "0", "no", "off", ""})
+
+
+def _as_bool(raw: object, name: str) -> bool:
+    """Coerces a configuration value into a real boolean.
+
+    `config.toml` templates its values as strings (`DEBUG = "$DEBUG"`), and
+    every non-empty string is truthy in Python — so an unconverted `"False"`
+    would silently keep debug mode on and skip the production hardening block
+    below.
+
+    Args:
+        raw (object): The value as read from `config.toml` or the environment.
+        name (str): Setting name, used in the error message.
+
+    Returns:
+        bool: The parsed value.
+
+    Raises:
+        ImproperlyConfigured: If the value is neither a boolean nor a
+            recognised truthy/falsy spelling.
+    """
+    if isinstance(raw, bool):
+        return raw
+    if raw is None:
+        return False
+    text = str(raw).strip().lower()
+    if text in _TRUE_VALUES:
+        return True
+    if text in _FALSE_VALUES:
+        return False
+    raise ImproperlyConfigured(
+        f"CRITICAL: {name} must be a boolean. Got {raw!r}. "
+        f"Accepted: {sorted(_TRUE_VALUES)} or {sorted(_FALSE_VALUES - {''})}."
+    )
+
+
+DEBUG = _as_bool(config["django_settings"].get("DEBUG"), "DEBUG")
 
 
 # --- 2.3 ALLOWED HOSTS (ALLOWED_HOSTS) ---
@@ -168,16 +212,17 @@ try:
 except (KeyError, ValueError) as e:
     # In production, this should be a hard failure.
     if not DEBUG:
-        raise ImproperlyConfigured(f"CRITICAL: Encryption configuration failed. {e}")
+        raise ImproperlyConfigured(
+            f"CRITICAL: Encryption configuration failed. {e}"
+        ) from e
     else:
         # In DEBUG, we can warn or set dummy values if strictly necessary,
         # but better to fail early to ensure dev/prod parity.
         print(f"WARNING: Encryption keys missing in DEBUG mode. {e}")
-        # For development convenience ONLY if you want to allow running without keys:
-        # MASTER_KEY = b'some-default-dev-key-32-bytes-url-safe-base64'
-        # ENCRYPTION_PEPPER = b'some-default-dev-pepper'
-        # But let's stick to raising error to force proper setup.
-        raise ImproperlyConfigured(f"Encryption keys missing. {e}")
+        # Deliberately fails here too, rather than substituting development
+        # defaults: dev/prod parity on the encryption path is worth more than
+        # the convenience of booting without keys.
+        raise ImproperlyConfigured(f"Encryption keys missing. {e}") from e
 
 
 # ==============================================================================
@@ -399,7 +444,8 @@ else:
 
         if not all([EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD]):
             raise ValueError(
-                "EMAIL_HOST, EMAIL_HOST_USER, and EMAIL_HOST_PASSWORD must not be empty in production."
+                "EMAIL_HOST, EMAIL_HOST_USER and EMAIL_HOST_PASSWORD "
+                "must not be empty in production."
             )
     except (KeyError, ValueError) as e:
         raise ImproperlyConfigured(
@@ -446,7 +492,10 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = datetime.timedelta(minutes=15)
 AXES_LOCKOUT_TEMPLATE = None  # Devuelve JSON vía DRF
 AXES_RESET_ON_SUCCESS = True
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+# Lock on the (username, IP) pair. A nested list means "combine these", which
+# is the Axes 6 replacement for the removed
+# AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP boolean.
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 
 # -- 12.3: Spectacular Settings (OpenAPI) --
 SPECTACULAR_SETTINGS = {
@@ -565,6 +614,20 @@ LOGGING = {
         "project": {
             "handlers": ["console", "project_log_file", "project_json_file"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # Application code calls logging.getLogger(__name__), which yields
+        # "apps.*" and "utils.*". Without these two entries those records
+        # reach no handler at all and are discarded silently — including the
+        # decryption-failure CRITICAL and the TOTP replay warning.
+        "apps": {
+            "handlers": ["console", "project_log_file", "project_json_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "utils": {
+            "handlers": ["console", "project_log_file", "project_json_file"],
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": False,
         },
     },

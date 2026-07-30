@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  quality:
+    name: Lint, checks and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # config.toml is gitignored because it holds secrets. envtoml resolves
+      # "$VAR" placeholders from the environment, so the tracked example plus
+      # throwaway generated values is a faithful stand-in.
+      - name: Generate throwaway configuration
+        run: |
+          cp config.toml.example config.toml
+          {
+            echo "DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+            echo "MASTER_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+            echo "ENCRYPTION_PEPPER=$(python -c 'import secrets; print(secrets.token_hex(32))')"
+            echo "BASE_DIR=${GITHUB_WORKSPACE}"
+            echo "PROJECT_LOGS_DIR=${GITHUB_WORKSPACE}/logs"
+            echo "DEBUG=True"
+            echo "ALLOWED_HOSTS=localhost,127.0.0.1"
+            echo "CORS_ALLOWED_ORIGINS=http://localhost:3000"
+            echo "POSTGRES_DB=user_app_template"
+            echo "POSTGRES_USER=postgres"
+            echo "POSTGRES_PASSWORD=postgres"
+            echo "POSTGRES_HOST=localhost"
+            echo "POSTGRES_PORT=5432"
+            echo "EMAIL_HOST=smtp.example.test"
+            echo "EMAIL_PORT=587"
+            echo "EMAIL_USE_TLS=True"
+            echo "EMAIL_HOST_USER=ci@example.test"
+            echo "EMAIL_HOST_PASSWORD=ci-throwaway"
+          } >> "$GITHUB_ENV"
+
+      - name: Lint
+        run: ruff check backend/
+
+      # `ruff format --check` is deliberately not a gate yet: the codebase
+      # predates this formatter configuration, so enforcing it would require a
+      # repo-wide reformat. That lands as its own mechanical commit, after
+      # which this step becomes `ruff format --check backend/`.
+
+      - name: Django system checks
+        run: python backend/manage.py check --fail-level WARNING
+
+      # The suite runs against an in-RAM SQLite database (config.settings_test,
+      # agents.md section 3 local_testing), so no database service is required.
+      - name: Tests
+        run: pytest -q
+
+      # Boots with DEBUG=False so the production-only branch actually executes.
+      # This is the step that would have caught the DEBUG coercion defect: a
+      # templated "False" string stayed truthy and left the whole hardening
+      # block unreachable.
+      - name: Production settings smoke test
+        env:
+          DEBUG: "False"
+        run: |
+          python - <<'PY'
+          import os
+          import django
+
+          os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings"
+          django.setup()
+          from django.conf import settings
+
+          assert settings.DEBUG is False, f"DEBUG must be a real bool, got {settings.DEBUG!r}"
+          assert settings.SECURE_HSTS_SECONDS == 31536000, "HSTS not applied in production mode"
+          assert settings.SECURE_SSL_REDIRECT is True, "SSL redirect not applied"
+          assert settings.SESSION_COOKIE_SECURE is True, "session cookie not marked secure"
+          assert settings.CSRF_COOKIE_SECURE is True, "CSRF cookie not marked secure"
+          print("production hardening verified")
+          PY
+        working-directory: backend

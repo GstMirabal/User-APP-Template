@@ -128,7 +128,8 @@ class TestUserAPI:
         token = totp.now()
 
         client.force_login(user)
-        # Using hardcoded path to avoid NoReverseMatch issues with nested router actions during test stabilization
+        # Hardcoded path: reverse() does not resolve nested router actions
+        # here. Tracked for cleanup in the test-suite unification sprint.
         activate_url = "/api/v1/users/me/2fa/activate/"
 
         # 1. First use: Success

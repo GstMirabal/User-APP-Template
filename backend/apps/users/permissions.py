@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -36,11 +39,6 @@ class IsPremiumUser(permissions.BasePermission):
         return (
             hasattr(request.user, "profile") and request.user.profile.role == "premium"
         )
-
-
-from datetime import timedelta
-
-from django.utils import timezone
 
 
 class RequiresStepUp(permissions.BasePermission):

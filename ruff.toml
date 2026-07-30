@@ -1,6 +1,39 @@
+# Single source of truth for ruff.
+#
+# A [tool.ruff] block previously also lived in pyproject.toml. ruff resolves
+# ruff.toml first, so that block was dead configuration: its line-length,
+# target-version, exclude and ignore list never applied, which is why rules it
+# listed as ignored kept surfacing. The settings below are the ones that block
+# was trying to express; pyproject.toml no longer carries a ruff section.
+
+target-version = "py313"
+line-length = 100
+exclude = ["backend/scripts", "venv", "migrations", ".agents"]
+
 [lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "SIM", "PTH", "TD", "ERA", "PL", "RUF"]
-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D203", "D213", "PLR2004", "TD002", "TD003"]
+ignore = [
+    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D203", "D213",
+    "PLR2004",
+    "TD002", "TD003",
+    # Django idiom: deferred imports inside AppConfig.ready() and signal
+    # receivers are how circular imports are avoided (RA-02).
+    "PLC0415",
+    # settings.py is declarative configuration, not a procedure; a statement
+    # count ceiling does not apply to it.
+    "PLR0915",
+]
+
+[lint.per-file-ignores]
+# Django models/serializers/admin declare configuration through class-level
+# lists (Meta.fields, REQUIRED_FIELDS, permission_classes, Meta.indexes).
+# These are namespaces evaluated once at class creation, not mutable defaults
+# shared between instances, and annotating them ClassVar contradicts the
+# documented style of both Django and DRF.
+"backend/apps/*/models/*.py" = ["RUF012"]
+"backend/apps/*/serializers/*.py" = ["RUF012"]
+"backend/apps/*/admin.py" = ["RUF012"]
+"backend/apps/*/views.py" = ["RUF012"]
 
 [format]
 quote-style = "double"

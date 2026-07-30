@@ -15,7 +15,6 @@ class UserProfileInline(admin.StackedInline):
         "timezone",
         "preferred_currency",
         "language_code",
-        "two_factor_enabled",
     )
 
 
@@ -87,6 +86,7 @@ class UserAdmin(BaseUserAdmin):
                     "is_active",
                     "is_verified",
                     "is_suspended",
+                    "two_factor_enabled",
                     "is_staff",
                     "is_superuser",
                     "groups",
