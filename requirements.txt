@@ -22,6 +22,7 @@ httpcore==1.0.9
 httpx==0.28.1
 idna==3.11
 packaging==25.0
+Pillow==12.1.1
 psycopg2-binary==2.9.10
 pwned-passwords-django==5.2.0
 pycparser==2.23

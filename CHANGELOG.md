@@ -19,6 +19,11 @@ user-management foundation. Consolidates Sprints #000-#003.
 `api_key_binance_index` and `api_secret_binance_encrypted`. Export any data in
 those columns before migrating ([ADR-0005](docs/decisions/ADR-0005-generic-secret-vault.md)).
 
+**Fixed during release**: `Pillow` was never declared in `requirements.txt`
+despite `UserProfile.avatar` being an `ImageField`. A fresh clone failed
+`manage.py check` with `fields.E210`; it worked locally only because the
+dependency had been installed by hand. Caught by CI on its first real run.
+
 **Required configuration**: `REDIS_URL` in `[cache]` — the project refuses to
 start with `DEBUG=False` and no shared cache ([ADR-0001](docs/decisions/ADR-0001-shared-cache-backend.md)).
 `JWT_SIGNING_KEY` in `[security]` is strongly recommended; without it the
