@@ -35,6 +35,12 @@ ignore = [
 "backend/apps/*/admin.py" = ["RUF012"]
 "backend/apps/*/views.py" = ["RUF012"]
 
+# The settings package chains `from .previous import *` so each module sees the
+# values the earlier ones produced — the standard Django split-settings shape.
+# Modules and classes are imported explicitly in every file; only setting
+# values arrive through the star import, which is what F403/F405 flag here.
+"backend/config/settings/*.py" = ["F403", "F405"]
+
 [format]
 quote-style = "double"
 indent-style = "space"
