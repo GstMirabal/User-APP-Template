@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import logging
-import random
+import secrets as secrets_module
 import string
+from datetime import timedelta
 from typing import TYPE_CHECKING, TypedDict
 
 import pyotp
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 if TYPE_CHECKING:
     from .models.user import User
@@ -28,31 +31,103 @@ class VerificationService:
 
     @staticmethod
     def generate_otp(length: int = 6) -> str:
-        """Generates a random alphanumeric token."""
-        return "".join(random.choices(string.digits, k=length))
+        """Generates a numeric one-time code.
+
+        Uses `secrets`, not `random`: the latter is a Mersenne Twister, whose
+        output is predictable from a handful of observed values. This code
+        gates account verification.
+
+        Args:
+            length (int): Number of digits to produce.
+
+        Returns:
+            str: The generated code.
+        """
+        return "".join(secrets_module.choice(string.digits) for _ in range(length))
 
     @staticmethod
     def initialize_verification_flow(user: User) -> str:
-        """
-        Creates the activation secret and triggers the mock 'send' log.
+        """Issues a verification code and stores it encrypted, with an expiry.
+
+        The code lives in its own encrypted column (ADR-0004). It previously
+        overwrote `api_key_binance_encrypted` in plaintext, destroying any
+        exchange credential the user had stored.
+
+        Args:
+            user (User): The user being verified.
+
+        Returns:
+            str: The plaintext code, for the caller to deliver out of band.
         """
         otp = VerificationService.generate_otp()
-        user.secrets.api_key_binance_encrypted = f"OTP_PENDING:{otp}"
-        user.secrets.save()
-        logger.info("--- [MOCK OTP SENT]: %s ---", otp)
+        expires_at = timezone.now() + timedelta(
+            minutes=settings.VERIFICATION_OTP_TTL_MINUTES
+        )
+
+        user.secrets.set_sensitive_data("verification_otp", otp)
+        user.secrets.verification_otp_expires_at = expires_at
+        user.secrets.save(
+            update_fields=["verification_otp_encrypted", "verification_otp_expires_at"]
+        )
+
+        # The code itself is never logged: it is a live credential, and
+        # application logs are shipped off-host.
+        logger.debug("Verification code issued for user %s", user.pk)
         return otp
 
     @staticmethod
     def verify_account(user: User, code: str) -> bool:
-        """Validates the initial verification code."""
-        stored_data = user.secrets.api_key_binance_encrypted or ""
-        if f"OTP_PENDING:{code}" == stored_data:
-            user.is_verified = True
-            user.secrets.api_key_binance_encrypted = ""
-            user.save(update_fields=["is_verified"])
-            user.secrets.save(update_fields=["api_key_binance_encrypted"])
-            return True
-        return False
+        """Validates a verification code and marks the account verified.
+
+        Args:
+            user (User): The user presenting the code.
+            code (str): The code supplied by the caller.
+
+        Returns:
+            bool: True when the code matched and had not expired.
+        """
+        stored = user.secrets.get_sensitive_data("verification_otp")
+        expires_at = user.secrets.verification_otp_expires_at
+
+        if not stored or not expires_at:
+            return False
+
+        if timezone.now() > expires_at:
+            logger.info("Expired verification code presented for user %s", user.pk)
+            return False
+
+        # Constant-time comparison: the code is short and guessable enough that
+        # a timing side channel is worth closing.
+        if not secrets_module.compare_digest(stored, code):
+            logger.warning("Invalid verification code presented for user %s", user.pk)
+            return False
+
+        user.is_verified = True
+        user.secrets.set_sensitive_data("verification_otp", None)
+        user.secrets.verification_otp_expires_at = None
+        user.save(update_fields=["is_verified"])
+        user.secrets.save(
+            update_fields=["verification_otp_encrypted", "verification_otp_expires_at"]
+        )
+
+        VerificationService._audit(user, "verification_otp", "VERIFY")
+        return True
+
+    @staticmethod
+    def _audit(user: User, field: str, action: str) -> None:
+        """Appends an entry to the immutable secret-audit trail.
+
+        Args:
+            user (User): Subject of the event.
+            field (str): Which secret field the event concerns.
+            action (str): Short action verb.
+        """
+        from django.apps import apps
+
+        audit_model = apps.get_model("users", "UserSecretAudit")
+        audit_model.objects.create(
+            user=user, field_affected=field, action_type=action
+        )
 
     def setup_2fa(self: User) -> Setup2FAResult:
         """
@@ -61,8 +136,9 @@ class VerificationService:
         secret = pyotp.random_base32()
 
         # Generate 8 recovery codes (8 chars each)
+        alphabet = string.ascii_uppercase + string.digits
         recovery_list = [
-            "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            "".join(secrets_module.choice(alphabet) for _ in range(8))
             for _ in range(8)
         ]
 

@@ -10,3 +10,23 @@ services:
       - "5434:5432"
     volumes:
       - ./.docker-db-data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Shared cache backend (ADR-0001). TOTP anti-replay and step-up
+  # authentication both need state visible to every worker; the previous
+  # default, per-process LocMemCache, silently voided both.
+  redis:
+    image: redis:7-alpine
+    container_name: "${PROJECT_NAME}-redis"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

@@ -1,9 +1,10 @@
-from datetime import timedelta
+from typing import Any
 
-from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.request import Request
 from rest_framework.views import APIView
+
+from . import step_up
 
 
 class IsVerified(permissions.BasePermission):
@@ -42,9 +43,12 @@ class IsPremiumUser(permissions.BasePermission):
 
 
 class RequiresStepUp(permissions.BasePermission):
-    """
-    Blocks access to highly sensitive endpoints unless the user has
-    re-authenticated (Step-Up) within the last 5 minutes.
+    """Blocks sensitive endpoints without a recent re-authentication.
+
+    Resolution is delegated to `step_up.is_granted`, which checks the session
+    and the shared cache in turn (ADR-0002). Reading only the session, as this
+    class previously did, made every gated endpoint unreachable for
+    bearer-token clients, which never have one.
     """
 
     message = "This action requires a recent security validation (Step-Up Auth)."
@@ -53,15 +57,7 @@ class RequiresStepUp(permissions.BasePermission):
         if not (request.user and request.user.is_authenticated):
             return False
 
-        # Retrieve the Step-Up timestamp (stored in session by login/reauth endpoint)
-        step_up_at = request.session.get("step_up_timestamp")
-
-        if not step_up_at:
-            return False
-
-        # Validate that Step-Up occurred within the last 5 minutes
-        last_auth = timezone.datetime.fromisoformat(step_up_at)
-        return not timezone.now() > last_auth + timedelta(minutes=5)
+        return step_up.is_granted(request, request.user)
 
 
 class IsOwner(permissions.BasePermission):
@@ -69,7 +65,7 @@ class IsOwner(permissions.BasePermission):
     Object-level permission to ensure users can only modify their own data.
     """
 
-    def has_object_permission(self, request: Request, view: APIView, obj: any) -> bool:
+    def has_object_permission(self, request: Request, view: APIView, obj: Any) -> bool:
         # If the object is the user themselves
         if hasattr(obj, "id") and obj.id == request.user.id:
             return True

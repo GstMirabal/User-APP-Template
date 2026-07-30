@@ -361,6 +361,52 @@ except (KeyError, ValueError) as e:
 
 
 # ==============================================================================
+# SECTION 6.5: CACHE CONFIGURATION
+# ==============================================================================
+# The cache is a security dependency, not just an optimisation (ADR-0001):
+# TOTP anti-replay and step-up authentication both store short-lived state that
+# must be visible to every worker. Django's implicit default is a per-process
+# LocMemCache, under which neither control holds.
+# ------------------------------------------------------------------------------
+cache_config = config.get("cache", {})
+REDIS_URL = cache_config.get("REDIS_URL") or os.environ.get("REDIS_URL")
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+elif DEBUG:
+    # Development convenience only. Single-process runserver, so per-process
+    # state is equivalent to shared state.
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "user-app-template-dev",
+        }
+    }
+else:
+    raise ImproperlyConfigured(
+        "CRITICAL: Running in PRODUCTION mode (DEBUG=False) but no REDIS_URL is "
+        "configured. TOTP anti-replay and step-up authentication require a cache "
+        "shared across workers; a per-process fallback would silently void both. "
+        "Define REDIS_URL in the `[cache]` section of `config.toml`."
+    )
+
+# Window during which a re-authentication remains valid for step-up gated
+# endpoints (ADR-0002). Deliberately short: it guards secret writes and
+# irreversible anonymisation.
+STEP_UP_WINDOW_SECONDS = int(cache_config.get("STEP_UP_WINDOW_SECONDS") or 300)
+
+# Lifetime of a registration verification code (ADR-0004).
+VERIFICATION_OTP_TTL_MINUTES = int(
+    cache_config.get("VERIFICATION_OTP_TTL_MINUTES") or 15
+)
+
+
+# ==============================================================================
 # SECTION 7: PASSWORD VALIDATION AND HASHING
 # ==============================================================================
 
@@ -378,6 +424,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
     {"NAME": "apps.core.validators.PasswordComplexityValidator"},
+    # Rejects passwords known to appear in public breach corpora. Queries the
+    # Have I Been Pwned range API with a k-anonymity prefix, so the password
+    # itself never leaves this process. Fails open if the API is unreachable:
+    # an outage must not block registration. Stripped in settings_test to keep
+    # the suite hermetic.
+    {"NAME": "pwned_passwords_django.validators.PwnedPasswordsValidator"},
 ]
 
 # -- 7.2: Password Hashers --
@@ -507,6 +559,23 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
+# Signing key separated from SECRET_KEY (ADR-0003). Sharing them made any
+# disclosure of the session-signing secret an immediate token-forgery
+# capability, and forced both to rotate together. Falls back with a warning
+# rather than failing to boot, so an existing deployment is not locked out by
+# the upgrade.
+JWT_SIGNING_KEY = (
+    config.get("security", {}).get("JWT_SIGNING_KEY")
+    or os.environ.get("JWT_SIGNING_KEY")
+)
+if not JWT_SIGNING_KEY:
+    JWT_SIGNING_KEY = SECRET_KEY
+    logging.getLogger("config").warning(
+        "JWT_SIGNING_KEY is not configured; falling back to SECRET_KEY. "
+        "Disclosure of SECRET_KEY then also permits forging access tokens. "
+        "Generate one with `python backend/utils/generate_secrets.py`."
+    )
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": datetime.timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
@@ -514,7 +583,7 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": SECRET_KEY,
+    "SIGNING_KEY": JWT_SIGNING_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }

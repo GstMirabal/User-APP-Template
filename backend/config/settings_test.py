@@ -29,6 +29,15 @@ CACHES = {
     }
 }
 
+# The breach-corpus validator performs an outbound HTTPS request. Tests must
+# not depend on network reachability, so it is dropped here; the production
+# validator list is asserted separately.
+AUTH_PASSWORD_VALIDATORS = [
+    validator
+    for validator in AUTH_PASSWORD_VALIDATORS  # noqa: F405
+    if "PwnedPasswords" not in validator["NAME"]
+]
+
 # Argon2 is deliberately slow; tests create many users and do not measure
 # hashing strength. The production hasher list is asserted separately.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

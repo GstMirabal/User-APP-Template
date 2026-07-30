@@ -60,7 +60,9 @@ class TestUserAPI:
         )
 
         user = User.objects.get(email="verify@user-app-template.com")
-        otp = user.secrets.api_key_binance_encrypted.split(":")[1]
+        # The code lives in its own encrypted column (ADR-0004) and is read
+        # back through the sanctioned accessor, never off a raw field.
+        otp = user.secrets.get_sensitive_data("verification_otp")
 
         verify_url = reverse("users:user-verify")
         response = client.post(

@@ -19,10 +19,17 @@ class UserProfileInline(admin.StackedInline):
 
 
 class UserSecretInline(admin.StackedInline):
-    """
-    Inline paranoico para secretos.
-    NO muestra las llaves reales en el admin para evitar fugas visuales.
-    Solo permite ver si el secreto existe y está configurado.
+    """Read-only presence indicators for the secret vault.
+
+    Allow-list, not deny-list. The previous `exclude` named three fields and
+    therefore rendered the ciphertext of every other one — `dni_encrypted`,
+    `date_of_birth_encrypted`, `phone_number_encrypted`, `otp_recovery_codes`
+    — straight into the admin DOM, contradicting the docstring that claimed
+    otherwise. A deny-list also leaks again the moment a column is added,
+    which is exactly what happened.
+
+    Nothing here exposes a stored value: every field is a derived boolean or a
+    timestamp.
     """
 
     model = UserSecret
@@ -30,20 +37,33 @@ class UserSecretInline(admin.StackedInline):
     verbose_name_plural = _("Bóveda de Secretos (Solo Lectura)")
     fk_name = "user"
 
-    # Excluimos API keys reales para que ni el admin pueda verlas en el DOM
-    exclude = (
-        "api_key_binance_encrypted",
-        "api_secret_binance_encrypted",
-        "otp_secret_key",
+    fields = (
+        "has_identity_data",
+        "has_exchange_keys",
+        "has_two_factor",
+        "phone_verified_at",
+        "updated_at",
     )
+    readonly_fields = fields
 
-    readonly_fields = ("has_binance_keys",)
+    @admin.display(boolean=True, description=_("Datos de identidad guardados"))
+    def has_identity_data(self, obj: UserSecret) -> bool:
+        """Reports whether any encrypted identity field is populated."""
+        return bool(
+            obj.dni_encrypted
+            or obj.date_of_birth_encrypted
+            or obj.phone_number_encrypted
+        )
 
-    def has_binance_keys(self, obj):
+    @admin.display(boolean=True, description=_("Credenciales de exchange guardadas"))
+    def has_exchange_keys(self, obj: UserSecret) -> bool:
+        """Reports whether exchange API credentials are configured."""
         return bool(obj.api_key_binance_encrypted and obj.api_secret_binance_encrypted)
 
-    has_binance_keys.boolean = True
-    has_binance_keys.short_description = _("Binance Keys Configuradas")
+    @admin.display(boolean=True, description=_("2FA configurado"))
+    def has_two_factor(self, obj: UserSecret) -> bool:
+        """Reports whether a TOTP secret is present."""
+        return bool(obj.otp_secret_key)
 
 
 @admin.register(User)

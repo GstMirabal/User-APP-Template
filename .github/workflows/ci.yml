@@ -19,6 +19,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # The suite itself runs on in-RAM SQLite and LocMem, but the production
+    # settings smoke step boots with DEBUG=False, which requires a real shared
+    # cache (ADR-0001).
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +57,7 @@ jobs:
             echo "DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
             echo "MASTER_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
             echo "ENCRYPTION_PEPPER=$(python -c 'import secrets; print(secrets.token_hex(32))')"
+            echo "JWT_SIGNING_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
             echo "BASE_DIR=${GITHUB_WORKSPACE}"
             echo "PROJECT_LOGS_DIR=${GITHUB_WORKSPACE}/logs"
             echo "DEBUG=True"
@@ -58,6 +73,9 @@ jobs:
             echo "EMAIL_USE_TLS=True"
             echo "EMAIL_HOST_USER=ci@example.test"
             echo "EMAIL_HOST_PASSWORD=ci-throwaway"
+            echo "REDIS_URL=redis://127.0.0.1:6379/0"
+            echo "STEP_UP_WINDOW_SECONDS=300"
+            echo "VERIFICATION_OTP_TTL_MINUTES=15"
           } >> "$GITHUB_ENV"
 
       - name: Lint
@@ -97,6 +115,23 @@ jobs:
           assert settings.SECURE_SSL_REDIRECT is True, "SSL redirect not applied"
           assert settings.SESSION_COOKIE_SECURE is True, "session cookie not marked secure"
           assert settings.CSRF_COOKIE_SECURE is True, "CSRF cookie not marked secure"
+
+          # ADR-0003: the JWT signing key must not be the session secret.
+          assert settings.SIMPLE_JWT["SIGNING_KEY"] != settings.SECRET_KEY, (
+              "JWT signing key still falls back to SECRET_KEY"
+          )
+
+          # ADR-0001: a per-process cache silently voids TOTP anti-replay and
+          # step-up, so production must resolve to a shared backend.
+          backend = settings.CACHES["default"]["BACKEND"]
+          assert "locmem" not in backend.lower(), f"production cache is {backend}"
+
+          # ADR-0004 / breach-corpus validator must be active in production.
+          validators = {v["NAME"] for v in settings.AUTH_PASSWORD_VALIDATORS}
+          assert any("PwnedPasswords" in v for v in validators), (
+              "breach-corpus password validator is not wired"
+          )
+
           print("production hardening verified")
           PY
         working-directory: backend

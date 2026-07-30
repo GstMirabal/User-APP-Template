@@ -1,8 +1,8 @@
 import logging
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import GenericViewSet
 
+from . import step_up
 from .permissions import IsVerified, RequiresStepUp
 from .serializers import (
     UserProfileSerializer,
@@ -63,24 +64,46 @@ class UserViewSet(GenericViewSet):
 
     @action(detail=False, methods=["post"], url_path="me/reauth")
     def reauth(self, request: Request) -> Response:
-        """Validate password to gain Step-Up access for 5 minutes."""
+        """Validate the password to gain Step-Up access.
+
+        Goes through ``django.contrib.auth.authenticate`` rather than
+        ``user.check_password``. ``AxesBackend`` sits first in
+        ``AUTHENTICATION_BACKENDS`` and only counts attempts that pass through
+        it, so the direct call left this endpoint — a password oracle for an
+        already-authenticated session — outside brute-force protection
+        entirely. The ``sensitive`` throttle remains as a second layer.
+        """
         password = request.data.get("password")
         if not password:
             return Response(
                 {"error": "Password is required."}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if request.user.check_password(password):
-            request.session["step_up_timestamp"] = timezone.now().isoformat()
+        authenticated = authenticate(
+            request=request,
+            username=request.user.get_username(),
+            password=password,
+        )
+
+        if authenticated is None or authenticated.pk != request.user.pk:
+            logger.warning(
+                "Failed step-up re-authentication for user %s", request.user.pk
+            )
             return Response(
-                {
-                    "detail": "Step-Up validation successful. Access granted for 5 minutes."
-                },
-                status=status.HTTP_200_OK,
+                {"error": "Incorrect password."}, status=status.HTTP_403_FORBIDDEN
             )
 
+        step_up.grant(request, request.user)
+        window_minutes = settings.STEP_UP_WINDOW_SECONDS // 60
+
         return Response(
-            {"error": "Incorrect password."}, status=status.HTTP_403_FORBIDDEN
+            {
+                "detail": (
+                    "Step-Up validation successful. Access granted for "
+                    f"{window_minutes} minutes."
+                )
+            },
+            status=status.HTTP_200_OK,
         )
 
     @transaction.atomic

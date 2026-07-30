@@ -52,6 +52,16 @@ class UserSecret(models.Model):
         _("Binance API Secret (Cifrada)"), blank=True, null=True
     )
 
+    # Código de verificación de registro (ADR-0004).
+    # Campo propio y cifrado: antes se reutilizaba `api_key_binance_encrypted`,
+    # lo que pisaba una credencial real y guardaba el código en claro.
+    verification_otp_encrypted = models.TextField(
+        _("Código de verificación (Cifrado)"), blank=True, null=True
+    )
+    verification_otp_expires_at = models.DateTimeField(
+        _("Código de verificación expira el"), blank=True, null=True
+    )
+
     # Seguridad 2FA
     otp_secret_key = models.CharField(
         _("Clave secreta 2FA"), max_length=255, blank=True, null=True
