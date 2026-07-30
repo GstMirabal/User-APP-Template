@@ -51,11 +51,16 @@
 User-APP-Template is a high-performance, security-first boilerplate for building modern Django applications with a heavy focus on **Identity and Access Management (IAM)**. Extracted and distilled from production environments, this template provides a robust `users` application.
 
 **Key Features:**
-*   **JWT Stateless Authentication**: Secure token management with rotation and blacklisting.
-*   **Enhanced MFA Architecture**: Built-in support for TOTP (Google Authenticator) and verify-at-login flows.
-*   **Zero-Trust Encryption**: Application-level encryption for sensitive user data (e.g., API keys, secrets).
-*   **Brute Force Protection**: Native integration with `django-axes` for account lockout policies.
+*   **JWT Stateless Authentication**: Token rotation and blacklisting, signed with a key kept separate from `SECRET_KEY`.
+*   **TOTP Two-Factor**: Enrolment with recovery codes and cross-worker anti-replay protection.
+*   **Step-Up Authentication**: Sensitive writes and irreversible deletion require recent re-authentication, for both session and bearer-token clients.
+*   **Encrypted PII at Rest**: Fernet encryption with HMAC blind indexes, so encrypted fields stay searchable by exact match.
+*   **GDPR Anonymisation**: Irreversible PII erasure layered on soft deletion, with an append-only audit trail.
+*   **Brute Force Protection**: `django-axes` lockout, covering re-authentication as well as login.
+*   **Breach-Corpus Passwords**: Argon2 hashing, a 12-character minimum, complexity rules, and rejection of passwords found in public breach data.
 *   **Production-Ready Logging**: Structured JSON logging with ISO-8601 timestamps in UTC.
+
+Every module has a Blueprint in [`docs/architecture/`](docs/architecture/), every architectural decision an [ADR](docs/decisions/), and there is a [customization guide](docs/guides/USERS_CUSTOMIZATION_GUIDE.md) explaining which parts are the identity core and which are optional extras you can safely strip.
 
 ### Built With
 
@@ -64,6 +69,7 @@ User-APP-Template is a high-performance, security-first boilerplate for building
 * ![DRF](https://img.shields.io/badge/django-rest-ff1709?style=for-the-badge&logo=django&logoColor=white)
 * ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 * ![PostgreSQL](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+* ![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -83,23 +89,38 @@ User-APP-Template is a high-performance, security-first boilerplate for building
    cd User-APP-Template
    ```
 
-2. **Environment Setup**
-   Copy the configuration template and generate your security keys:
-   ```bash
-   cp .env.example .env
-   cp config.toml.example config.toml
-   ```
-
-3. **Install Dependencies**
+2. **Install Dependencies**
    ```bash
    python3 -m venv venv
    source venv/bin/activate
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt   # runtime set plus test and lint tooling
    ```
+
+3. **Environment Setup**
+   ```bash
+   cp .env.example .env
+   cp config.toml.example config.toml
+   python backend/utils/generate_secrets.py   # emits every key you need
+   ```
+
+   Paste the generated values into `config.toml`. Four are mandatory:
+
+   | Setting | Section | Why |
+   | :--- | :--- | :--- |
+   | `DJANGO_SECRET_KEY` | `[django_settings]` | Signs sessions and CSRF tokens. |
+   | `MASTER_KEY` | `[security]` | Fernet key encrypting all PII. Losing it makes stored data unrecoverable. |
+   | `ENCRYPTION_PEPPER` | `[security]` | Keys the blind indexes that make encrypted fields searchable. |
+   | `JWT_SIGNING_KEY` | `[security]` | Signs access tokens. Falls back to `DJANGO_SECRET_KEY` with a startup warning — see [ADR-0003](docs/decisions/ADR-0003-separate-jwt-signing-key.md). |
+
+   Also set `REDIS_URL` in `[cache]` (`redis://127.0.0.1:6381/0` matches the
+   bundled `docker-compose.yml`). The cache is a security dependency rather
+   than an optimisation: TOTP anti-replay and step-up authentication both need
+   state shared across workers, so the project refuses to start with
+   `DEBUG=False` and no cache configured — see [ADR-0001](docs/decisions/ADR-0001-shared-cache-backend.md).
 
 4. **Run Infrastructure and Migrations**
    ```bash
-   make db-up
+   make db-up      # PostgreSQL on 5434, Redis on 6381
    make migrate
    make dev
    ```
@@ -114,12 +135,19 @@ The `Makefile` serves as the primary gateway for common tasks:
 # Launch development server
 make dev
 
-# Run full test suite
+# Run full test suite (in-RAM SQLite, no Docker required)
 make test
 
 # Code quality check (Ruff)
 make lint
+
+# Django system checks, including the admin-integrity check
+make check
 ```
+
+Continuous integration runs the same gates on every push, plus a production
+settings smoke test that boots with `DEBUG=False` and asserts the hardening
+actually applies.
 
 **API Documentation:** Once running, access the Interactive Swagger UI at `http://localhost:8000/api/docs/swagger/`.
 
