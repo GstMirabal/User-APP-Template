@@ -2,9 +2,9 @@
 **File**: `docs/architecture/USERS_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #002
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: aa4e5db
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
@@ -25,7 +25,7 @@ The `users` module is the identity domain of User-APP-Template. It owns the cust
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `tasks.py`, `admin.py`, `urls.py`, `migrations/`. |
+| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `step_up.py`, `admin.py`, `urls.py`, `migrations/`. |
 | **Must not touch** | `backend/config/settings.py`, `backend/apps/core/`, `backend/utils/encryption.py` (consumes, never edits), other apps' migrations. |
 
 Contracts (formal interfaces this module exposes):
@@ -47,7 +47,7 @@ Data model (summary only — full schemas belong in the contract):
 - **`Address`**: reusable postal address; referenced twice by `User` (`billing_address`, `shipping_address`, both `SET_NULL`).
 - **`User`** (`AbstractUser`): UUID PK, unique `email` (the `USERNAME_FIELD`), unique `username`; security telemetry (`last_ip_address`, `failed_login_attempts`, `password_changed_at`); lifecycle flags (`is_verified`, `two_factor_enabled`, `is_suspended`, `is_anonymized`, `deleted_at`). Indexed on `email` and `username`.
 - **`UserProfile`** (1:1 `User`, `CASCADE`): `role` (`free`/`premium`/`admin`), locale preferences, avatar, bio, legal-consent timestamps, `registration_data` JSON, `deleted_at`.
-- **`UserSecret`** (1:1 `User`, `CASCADE`): Fernet-encrypted `*_encrypted` columns paired with HMAC-SHA256 `*_index` blind-index columns for exact-match lookup (`dni`, `phone_number`, `api_key_binance`); plus `otp_secret_key`, `otp_recovery_codes`, and `verification_otp_encrypted` / `verification_otp_expires_at` (ADR-0004).
+- **`UserSecret`** (1:1 `User`, `CASCADE`): Fernet-encrypted `*_encrypted` columns paired with HMAC-SHA256 `*_index` blind-index columns for exact-match lookup (`dni`, `phone_number`); plus `date_of_birth_encrypted`, `otp_secret_key`, `otp_recovery_codes`, and `verification_otp_encrypted` / `verification_otp_expires_at`. Exchange-specific columns were removed in ADR-0005.
 - **`UserSecretAudit`** (FK `User`, `CASCADE`): append-only trail of `field_affected` / `action_type` / `timestamp` / `ip_address`, ordered newest-first.
 
 Manager layer:
@@ -73,7 +73,7 @@ Manager layer:
 **Flow 3 — Writing a secret (step-up gated)**
 1. `POST /me/reauth/` re-authenticates through `django.contrib.auth.authenticate`, so `AxesBackend` counts the attempt. On success `step_up.grant` records the timestamp in the shared cache, and in the session when one already exists (ADR-0002).
 2. `PATCH /me/secrets/` passes `IsAuthenticated` + `IsVerified` + `RequiresStepUp`, which accepts either backend within `STEP_UP_WINDOW_SECONDS`.
-3. `UserSecretSerializer.update` calls `set_sensitive_data()`, which Fernet-encrypts the value and derives an HMAC-SHA256 blind index, then appends a `UserSecretAudit` row carrying the client IP (`HTTP_X_FORWARDED_FOR` first hop, else `REMOTE_ADDR`).
+3. `UserSecretSerializer.update` writes each supplied field from `SENSITIVE_FIELDS` (`dni`, `phone_number`, `date_of_birth`) through `set_sensitive_data()`, which Fernet-encrypts it and derives an HMAC-SHA256 blind index where the model declares one, then appends a `UserSecretAudit` row per field carrying the client IP (`HTTP_X_FORWARDED_FOR` first hop, else `REMOTE_ADDR`).
 
 **Flow 4 — TOTP enrolment**
 1. `POST /me/2fa/setup/` — rejected if `two_factor_enabled` is already true; otherwise generates a base32 secret, 8 recovery codes (stored encrypted as CSV), and returns the `otpauth://` provisioning URI.
@@ -115,7 +115,8 @@ Manager layer:
 This module's ADR log — link, don't restate:
 
 - `docs/decisions/ADR-0002-hybrid-step-up-authentication.md`: step-up resolves through the session and a shared-cache grant, so token clients can reach gated endpoints.
-- `docs/decisions/ADR-0004-dedicated-encrypted-otp-storage.md`: the verification code gets its own encrypted column with an expiry, instead of overwriting an exchange credential in plaintext.
+- `docs/decisions/ADR-0004-dedicated-encrypted-otp-storage.md`: the verification code gets its own encrypted column with an expiry, instead of overwriting a credential column in plaintext.
+- `docs/decisions/ADR-0005-generic-secret-vault.md`: exchange-specific columns removed; the vault and its endpoint serve generic identity data.
 
 Still undocumented, inherited (retroactive candidates, `§3.1` triggers in brackets):
 

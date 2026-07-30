@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: USERS
 **File**: `docs/walkthroughs/USERS_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #002
+**Last updated**: Sprint #003
 
 ---
 
@@ -22,6 +22,9 @@
 | #002 | Credentials use a CSPRNG | OTP and 2FA recovery codes moved off `random`. |
 | #002 | Admin secret leak closed | `UserSecretInline` converted from deny-list to allow-list of derived indicators. |
 | #002 | `/me/reauth/` under Axes | Re-authentication routed through the authentication backend, so lockout applies. |
+| #003 | Vault generalised | Exchange columns removed; `/me/secrets/` now writes `dni`, `phone_number`, `date_of_birth` (ADR-0005). |
+| #003 | Module in English | Every `verbose_name`, `__str__`, docstring and comment translated. |
+| #003 | Celery stub deleted | The framework was never wired; tasks ran synchronously behind a stub. |
 
 ## 2. Current state
 
@@ -43,11 +46,9 @@ Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 | :--- | :--- | :--- | :--- |
 | No resend endpoint for an expired verification code; recovery is administrator re-issue. Needs its own rate limiting. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-9 |
 | A step-up grant is keyed by user id, so it applies to every concurrent session of that user, and survives the client discarding its token until the window lapses (ADR-0002 §3). | Medium | `:tech-debt:` | `ADR-0002` |
-| `api_key_binance_*` / `api_secret_binance_*` columns are exchange-specific residue in a generic user-management template. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-3 |
-| `VerificationService.setup_2fa(self: User)` is an undecorated instance method annotated as if `self` were a `User`, yet invoked as `VerificationService.setup_2fa(user)`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-4 |
-| Spanish strings in `verbose_name`, `__str__` and comments — violates `agents.md §1 code_logic`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-2 |
-| Celery is a stub: `config/celery_app.py` does not exist, so every task runs synchronously. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-5 |
 | `test_api.py` hardcodes `/api/v1/users/me/2fa/activate/` because `reverse()` does not resolve that nested router action. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
+
+**Resolved in Sprint #003**: exchange-specific columns; Spanish strings; Celery stub; `setup_2fa` shape.
 
 **Resolved in Sprint #002**: step-up unreachable via JWT; OTP plaintext in a credential column; OTP never expiring; OTP in logs; `random` for credentials; `/me/reauth/` outside Axes; admin ciphertext exposure.
 

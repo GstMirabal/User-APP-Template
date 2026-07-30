@@ -2,9 +2,9 @@
 **File**: `docs/architecture/CONFIG_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #002
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: aa4e5db
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
@@ -25,7 +25,7 @@ The `config` module is the Django project root: it resolves configuration from `
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/config/` — `settings.py`, `urls.py`, `wsgi.py`, `asgi.py`. |
+| **Owns** | `backend/config/` — `settings/` (`base`, `security`, `cache`, `email_config`, `third_party`, `logging_config`), `urls.py`, `wsgi.py`, `asgi.py`. |
 | **Must not touch** | `backend/apps/*/` business logic, `backend/utils/`, application migrations. |
 
 Contracts (formal interfaces this module exposes):

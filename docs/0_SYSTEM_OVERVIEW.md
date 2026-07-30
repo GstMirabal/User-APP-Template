@@ -1,7 +1,7 @@
 # 🧭 System Overview: User-APP-Template
-**Last Audit Sprint**: #002
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: aa4e5db
+**Last Audit Commit SHA**: ec5108c
 
 This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` requires every session to read this file before anything else. It is intentionally short — for the full component inventory, see `.agents/docs/architecture/topology_map.md`.
 

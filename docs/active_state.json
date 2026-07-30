@@ -8,16 +8,16 @@
     "onboarding_sprint": "000"
   },
   "current_sprint": {
-    "id": "002",
-    "slug": "002-backend-security",
+    "id": "003",
+    "slug": "003-backend-generalization",
     "status": "CLOSED",
     "stack": "backend",
-    "layer": "security",
-    "last_audit_sprint": 2,
+    "layer": "generalization",
+    "last_audit_sprint": 3,
     "last_audit_date": "2026-07-30",
-    "last_audit_commit_sha": "aa4e5db"
+    "last_audit_commit_sha": "ec5108c"
   },
-  "active_layer": "security",
+  "active_layer": "generalization",
   "active_app": "users",
   "topology_map": [
     ".github/workflows/",
@@ -29,6 +29,7 @@
     "backend/apps/users/serializers/",
     "backend/apps/users/tests/",
     "backend/config/",
+    "backend/config/settings/",
     "backend/scripts/",
     "backend/utils/",
     "docs/architecture/",

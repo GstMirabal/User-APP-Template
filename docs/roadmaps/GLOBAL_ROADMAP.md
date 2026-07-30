@@ -1,7 +1,7 @@
 # 🗺️ Global Roadmap: User-APP-Template
-**Last Audit Sprint**: #002
+**Last Audit Sprint**: #003
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: aa4e5db
+**Last Audit Commit SHA**: ec5108c
 
 ---
 
@@ -35,17 +35,25 @@ Backlog derived from the Sprint #000 reverse-engineering audit and extended by f
 | P0-14 | OTP and 2FA recovery codes moved off `random` to `secrets` | — |
 | P1-6 | `pwned-passwords-django` wired into the validator chain | — |
 
+### Sprint #003 — generalization
+
+| # | Item | ADR |
+| :--- | :--- | :--- |
+| P1-2 | Every Spanish string in code translated to English | — |
+| P1-3 | Exchange-specific columns removed; vault and endpoint generalised | ADR-0005 |
+| P1-4 | `setup_2fa` is a `@staticmethod` | — |
+| P1-5 | Celery stub and inert closure deleted | — |
+| P1-7 | `settings.py` split into a package of six modules | — |
+| P2-2 | Customization guide: identity core vs optional extras | — |
+| P2-6 | `requirements.txt` split into runtime and development sets | — |
+| P2-10 | README refreshed for the current setup | — |
+
 **No P0 items remain open.**
 
-## P1 — Structural debt (Sprint #003)
+## P1 — Structural debt (Sprint #004)
 
 | # | Item | Module |
 | :--- | :--- | :--- |
-| P1-2 | Translate every Spanish string in code to English (`agents.md §1 code_logic`). | `users` |
-| P1-3 | Remove the `api_key_binance_*` / `api_secret_binance_*` columns. Destructive migration → **ADR** (trigger #1). `preferred_currency` stays: an ordinary user preference, not crypto residue. | `users` |
-| P1-4 | Make `VerificationService.setup_2fa` a `@staticmethod` taking `user: User`, matching its siblings. | `users` |
-| P1-5 | Delete the Celery stub and the inert `send_welcome_email` closure. A template should not ship half-wired async infrastructure. | `users` |
-| P1-7 | Split `settings.py` (620 lines) into a `config/settings/` package: `base`, `security`, `cache`, `third_party`, `logging`. | `config` |
 | P1-8 | Author the retroactive ADRs still listed in each Blueprint §7 (encryption strategy, GDPR anonymization, email-as-username). | all |
 | P1-9 | Verification-code resend endpoint with its own rate limiting. Expiry now exists, so an expired code currently needs administrator re-issue. | `users` |
 | P1-10 | Evaluate RS256 with a key pair. HS256 is symmetric: any verifying service must hold the minting key. Warrants its own ADR. | `config` |
@@ -55,19 +63,16 @@ Backlog derived from the Sprint #000 reverse-engineering audit and extended by f
 | # | Item | Module |
 | :--- | :--- | :--- |
 | P2-1 | Write the contract documents referenced by the Blueprints: `docs/contracts/{USERS,CORE,CONFIG}_CONTRACT.md`. | all |
-| P2-2 | `docs/guides/USERS_CUSTOMIZATION_GUIDE.md` — which parts are the identity core and which are optional extras, so consumers can strip with confidence. | `users` |
 | P2-5 | Add `.npmrc` with `ignore-scripts=true` and `minimum-release-age=1440` before any JS/TS surface lands (RA-10). | root |
-| P2-6 | Split `requirements.txt` into runtime and development sets; it mixes `pytest`, `factory-boy` and `ruff` with production dependencies. | root |
 | P2-7 | Unify the test suite on the pytest idiom, replace `assertTrue(True)` with real assertions, resolve the hardcoded `/2fa/activate/` URL. | `core`, `users` |
 | P2-8 | Apply `ruff format` repo-wide as a standalone mechanical commit, then enable `ruff format --check` as a CI gate. | all |
 | P2-9 | Consider restricting `/health/` at the ingress; it is unauthenticated and names which subsystem is degraded. | `core` |
-| P2-10 | README still documents the pre-#002 setup: no Redis service, no `[cache]` section, no `JWT_SIGNING_KEY`. | root |
 
 ## Upstream (`.agents` framework)
 
 | # | Item | Status |
 | :--- | :--- | :--- |
-| U-1 | `on_commit.py` secret scanner matched the bare substring `PASSWORD =`, blocking every commit touching authentication code while catching no real leak. Now requires a string *literal* assigned to a secret-named identifier, and additionally detects `MASTER_KEY`, `SIGNING_KEY` and `ENCRYPTION_PEPPER`. | ✅ Fixed on `fix/secret-scanner-false-positives`; **needs pushing to the `.agents` remote** |
+| U-1 | `on_commit.py` secret scanner matched the bare substring `PASSWORD =`, blocking every commit touching authentication code while catching no real leak. Now requires a string *literal* assigned to a secret-named identifier, and additionally detects `MASTER_KEY`, `SIGNING_KEY` and `ENCRYPTION_PEPPER`. | ✅ Pushed to `origin/fix/secret-scanner-false-positives` (`624a6b4`). Open a PR against the `.agents` default branch when convenient. |
 
 ## Open questions
 

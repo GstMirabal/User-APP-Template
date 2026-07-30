@@ -9,6 +9,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 ## [Unreleased]
 
 ### Added
+- **Customization guide** (`docs/guides/USERS_CUSTOMIZATION_GUIDE.md`) stating which components are the identity core and which are optional extras, with exactly what breaks when each is removed. #003
+- `requirements-dev.txt`, so a deployment no longer installs pytest, factory-boy and ruff alongside its runtime dependencies. #003
+- [ADR-0005](docs/decisions/ADR-0005-generic-secret-vault.md): generic secret vault, without exchange-specific columns. #003
 - Four architecture decision records under `docs/decisions/`, the project's first recorded rationale. #002
 - `apps/users/step_up.py`, holding step-up grant state shared between the permission class and the re-authentication endpoint. #002
 - `STEP_UP_WINDOW_SECONDS` and `VERIFICATION_OTP_TTL_MINUTES` settings, replacing hardcoded values. #002
@@ -27,6 +30,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 - `.agents/venv_skillopt/` provisioned with the lean core (`graphifyy==0.8.30`); `.agents/installed.lock` written. #000
 
 ### Changed
+- **Removed the exchange-specific columns.** `api_key_binance_encrypted`, `api_key_binance_index` and `api_secret_binance_encrypted` were the only fields `UserSecretSerializer` exposed, so the project's most heavily protected write existed solely to store credentials for one named exchange. The serializer now writes the identity fields the vault already held — `dni`, `phone_number`, `date_of_birth` — which no endpoint had ever exposed. Migration `0007` is irreversible ([ADR-0005](docs/decisions/ADR-0005-generic-secret-vault.md)). #003
+- **Split `settings.py` into a package.** 704 lines mixing configuration loading, secrets, security headers, database, cache, email, third-party wiring and logging became six modules chained in dependency order. All 198 resolved settings were dumped before and after: 196 byte-identical, two private helpers correctly not exported, one class module path changed. #003
+- **Translated every Spanish string in code to English** (`agents.md §1 code_logic`). Migration `0008` carries the `verbose_name` changes; no schema effect. #003
+- **Deleted the Celery stub.** `config/celery_app.py` never existed, so `tasks.py` fell back to a `CeleryStub` and every task ran synchronously; `signals.py` carried a matching closure with an empty body. #003
+- `VerificationService.setup_2fa` is a `@staticmethod`, matching every sibling on the service. It was an undecorated instance method annotated as if `self` were a `User`. #003
+- README documented the pre-#002 setup: no Redis, no `[cache]` section, no `JWT_SIGNING_KEY`, and a feature list still describing exchange API key storage. #003
 - **Unified ruff configuration in `ruff.toml`.** The `[tool.ruff]` block in `pyproject.toml` was dead configuration — `ruff` resolves `ruff.toml` first — which is why rules its `ignore` list named kept surfacing. Findings dropped from 79 to zero. #001
 - Test modules restructured into `tests/` packages per app. #001
 - `make test` runs the whole suite instead of a single file; added `make check`. #001

@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: CONFIG
 **File**: `docs/walkthroughs/CONFIG_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #002
+**Last updated**: Sprint #003
 
 ---
 
@@ -22,6 +22,8 @@
 | #002 | Shared cache backend | Redis service, explicit `CACHES`, hard failure when `DEBUG=False` without one (ADR-0001). |
 | #002 | JWT signing key separated | `JWT_SIGNING_KEY` distinct from `SECRET_KEY`, with a startup warning on fallback (ADR-0003). |
 | #002 | Breach-corpus validator wired | `pwned-passwords-django` was installed and unused. |
+| #003 | Settings split into a package | 704 lines into six modules; 196 of 198 resolved settings byte-identical. |
+| #003 | Requirements split | Runtime and development dependency sets separated. |
 
 ## 2. Current state
 
@@ -40,9 +42,10 @@ Implements: `docs/architecture/CONFIG_BLUEPRINT.md`.
 | `JWT_SIGNING_KEY` falls back to `SECRET_KEY` when unset, so a deployment that never sets it stays exactly as exposed as before; only a startup warning distinguishes the two states (ADR-0003 §3). | Medium | `:tech-debt:` | `ADR-0003` |
 | HS256 is symmetric: any service that verifies tokens must hold the key that mints them. RS256 warrants its own ADR. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-10 |
 | Redis is now a single point of failure for two-factor login and step-up. Failing closed is correct for a security control, but it is real operational surface. | Medium | `:tech-debt:` | `ADR-0001` |
-| `settings.py` is 620 lines in one module, mixing secret resolution, security headers, third-party wiring, cache and logging. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-7 |
 | `ruff format --check` is not yet a CI gate: the codebase predates this formatter configuration. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-8 |
 | `.npmrc` supply-chain controls (RA-10) are absent. Moot while no JS/TS surface exists. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-5 |
+
+**Resolved in Sprint #003**: monolithic settings module; mixed runtime/dev requirements; stale README.
 
 **Resolved in Sprint #002**: shared JWT/session signing key; missing `CACHES`; breach-corpus validator unused.
 

@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: CORE
 **File**: `docs/walkthroughs/CORE_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #002
+**Last updated**: Sprint #003
 
 ---
 
