@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: USERS
 **File**: `docs/walkthroughs/USERS_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #001
+**Last updated**: Sprint #002
 
 ---
 
@@ -17,14 +17,23 @@
 | #000 | Retroactive documentation | Module reverse-engineered into `docs/architecture/USERS_BLUEPRINT.md`. |
 | #001 | Admin repaired | `two_factor_enabled` moved to the `User` fieldset it belongs to; user pages render again. |
 | #001 | Suite made executable | The nine pre-existing tests ran for the first time and all passed; factories added. |
+| #002 | Step-up reachable via JWT | Grant resolves through session or shared cache (ADR-0002); token clients can finally reach gated endpoints. |
+| #002 | Verification code secured | Own Fernet-encrypted column with expiry, constant-time compare, audit entry (ADR-0004). |
+| #002 | Credentials use a CSPRNG | OTP and 2FA recovery codes moved off `random`. |
+| #002 | Admin secret leak closed | `UserSecretInline` converted from deny-list to allow-list of derived indicators. |
+| #002 | `/me/reauth/` under Axes | Re-authentication routed through the authentication backend, so lockout applies. |
 
 ## 2. Current state
 
-The identity domain is feature-complete and, as of Sprint #001, **actually verified**. The suite runs (52 tests, all passing) against an in-RAM database. The nine pre-existing tests turned out to be correct all along — they had simply never been executed, because no `DJANGO_SETTINGS_MODULE` existed anywhere in the project.
+The identity domain is feature-complete, verified, and — as of Sprint #002 — no longer carrying the security defects the audit found. 77 tests pass against an in-RAM database.
 
-Models, managers, serializers, permissions and `UserViewSet` are coherent; the encryption helpers are correct and well documented. The admin renders again after `UserProfileInline` stopped declaring a field belonging to `User`, and a custom system check (`core.E001`) now makes that class of defect a startup error.
+Step-up authentication works for both client styles. This is the headline change: `PATCH /me/secrets/` and `POST /me/anonymize/` were unreachable for every bearer-token client, which is the project's own primary authentication mechanism. `/me/reauth/` now re-authenticates through the auth backend, so Axes counts failed attempts against it.
 
-What remains open is security design rather than correctness: step-up authentication is session-bound and therefore unreachable for stateless JWT clients, the registration OTP is stored in plaintext inside an exchange-credential column, and TOTP anti-replay depends on a per-process cache. All three are Sprint #002 work.
+The registration code has its own Fernet-encrypted column with an expiry, is compared in constant time, is recorded in `UserSecretAudit`, and is never logged. Issuing one no longer destroys a stored exchange credential. Both the code and the 2FA recovery codes come from `secrets` rather than `random`.
+
+The admin exposes derived booleans and timestamps only; no stored secret value reaches the DOM.
+
+What remains open is genericity rather than security: exchange-specific columns, Spanish strings, and the half-wired Celery stub. All are Sprint #003 work.
 
 Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 
@@ -32,18 +41,15 @@ Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 
 | Item | Severity | Marked as | Tracked where |
 | :--- | :--- | :--- | :--- |
-| Step-up authentication stores its timestamp in the Django **session**, but DRF also accepts stateless `JWTAuthentication`. A pure-JWT client has no session, so `PATCH /me/secrets/` and `POST /me/anonymize/` are permanently unreachable for it. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-4 |
-| `VerificationService.initialize_verification_flow` stores the registration OTP inside `api_key_binance_encrypted` — a field reserved for an exchange credential — and writes it in **plaintext**, bypassing `set_sensitive_data()`. No expiry exists. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-5 |
-| `/me/reauth/` calls `check_password()` directly instead of going through the authentication backend, so `AxesBackend` never counts the attempt. Password guessing there is limited only by the 5/min throttle. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-8 |
-| `UserSecretInline` excludes only three fields, so `dni_encrypted`, `date_of_birth_encrypted`, `phone_number_encrypted` and `otp_recovery_codes` ciphertext still render in the admin DOM despite the "paranoid" docstring. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-9 |
-| TOTP anti-replay relies on the default per-process `LocMemCache`; a replayed token hitting a different worker succeeds. | **High** | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-7 |
+| No resend endpoint for an expired verification code; recovery is administrator re-issue. Needs its own rate limiting. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-9 |
+| A step-up grant is keyed by user id, so it applies to every concurrent session of that user, and survives the client discarding its token until the window lapses (ADR-0002 §3). | Medium | `:tech-debt:` | `ADR-0002` |
 | `api_key_binance_*` / `api_secret_binance_*` columns are exchange-specific residue in a generic user-management template. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-3 |
-| `VerificationService.setup_2fa(self: User)` is an undecorated instance method annotated as if `self` were a `User`, yet invoked as `VerificationService.setup_2fa(user)`. Every sibling is a `@staticmethod`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-4 |
-| Spanish strings in `verbose_name`, `__str__` and comments across the module — violates `agents.md §1 code_logic`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-2 |
-| Celery is a stub: `config/celery_app.py` does not exist, so `tasks.py` falls back to `CeleryStub` and every task runs synchronously. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-5 |
+| `VerificationService.setup_2fa(self: User)` is an undecorated instance method annotated as if `self` were a `User`, yet invoked as `VerificationService.setup_2fa(user)`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-4 |
+| Spanish strings in `verbose_name`, `__str__` and comments — violates `agents.md §1 code_logic`. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-2 |
+| Celery is a stub: `config/celery_app.py` does not exist, so every task runs synchronously. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-5 |
 | `test_api.py` hardcodes `/api/v1/users/me/2fa/activate/` because `reverse()` does not resolve that nested router action. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
 
-**Resolved in Sprint #001**: admin `FieldError`; uncollectable test suite; discarded application logs (including this module's replay-attack warning and anonymization audit trail); mid-file imports in `permissions.py`.
+**Resolved in Sprint #002**: step-up unreachable via JWT; OTP plaintext in a credential column; OTP never expiring; OTP in logs; `random` for credentials; `/me/reauth/` outside Axes; admin ciphertext exposure.
 
 ## 4. How to operate it
 

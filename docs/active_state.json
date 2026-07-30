@@ -8,16 +8,16 @@
     "onboarding_sprint": "000"
   },
   "current_sprint": {
-    "id": "001",
-    "slug": "001-backend-verification",
+    "id": "002",
+    "slug": "002-backend-security",
     "status": "CLOSED",
     "stack": "backend",
-    "layer": "verification",
-    "last_audit_sprint": 1,
+    "layer": "security",
+    "last_audit_sprint": 2,
     "last_audit_date": "2026-07-30",
-    "last_audit_commit_sha": "86cc29b"
+    "last_audit_commit_sha": "aa4e5db"
   },
-  "active_layer": "verification",
+  "active_layer": "security",
   "active_app": "users",
   "topology_map": [
     ".github/workflows/",
@@ -73,6 +73,7 @@
     "linter": "ruff",
     "type_checker": "mypy (strict)",
     "ci": "GitHub Actions",
-    "test_runner": "pytest + pytest-django (in-RAM SQLite)"
+    "test_runner": "pytest + pytest-django (in-RAM SQLite)",
+    "cache": "Redis 7 (shared; LocMem fallback in DEBUG only)"
   }
 }

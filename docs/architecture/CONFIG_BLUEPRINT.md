@@ -2,9 +2,9 @@
 **File**: `docs/architecture/CONFIG_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #001
+**Last Audit Sprint**: #002
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: 86cc29b
+**Last Audit Commit SHA**: aa4e5db
 
 ---
 
@@ -90,6 +90,8 @@ Applies `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `S
 | Axes must be evaluated before the model backend. | `AUTHENTICATION_BACKENDS[0] == "axes.backends.AxesBackend"`. |
 | Refresh tokens must rotate and blacklist. | `SIMPLE_JWT["ROTATE_REFRESH_TOKENS"]` and `["BLACKLIST_AFTER_ROTATION"]` are both `True`. |
 | Production must serve HSTS for one year with preload. | `SECURE_HSTS_SECONDS == 31536000` in the `DEBUG = False` branch. |
+| Production must not run on a per-process cache. | Boot fails when `DEBUG=False` and no `REDIS_URL` is set; CI asserts the resolved backend. |
+| The JWT signing key must differ from `SECRET_KEY`. | CI production smoke asserts `SIMPLE_JWT["SIGNING_KEY"] != SECRET_KEY`. |
 | `DEBUG` must be a real boolean, never a truthy string. | `_as_bool()` coerces it and rejects anything ambiguous; the CI production smoke step asserts `settings.DEBUG is False`. |
 | A real environment variable must override a `.env` entry. | `.env` loading uses `os.environ.setdefault`. |
 
@@ -97,8 +99,9 @@ Applies `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `S
 
 This module's ADR log — link, don't restate. No ADRs exist yet:
 
-- _(pending)_ `config.toml` (via `envtoml`) as primary configuration source with env fallback — trigger #4 (hard-to-replace dependency).
-- _(pending)_ Reusing `SECRET_KEY` as the JWT `SIGNING_KEY` — trigger #3 (security boundary).
+- `docs/decisions/ADR-0001-shared-cache-backend.md`: Redis as the shared cache; a per-process fallback voided TOTP anti-replay.
+- `docs/decisions/ADR-0003-separate-jwt-signing-key.md`: `JWT_SIGNING_KEY` separated from `SECRET_KEY`.
+- _(pending)_ `config.toml` (via `envtoml`) as primary configuration source with env fallback — trigger #4.
 - _(pending)_ `settings.py` as a single 572-line module rather than a split settings package — no ADR trigger fires (measured degree centrality places it outside the backend top eight, so trigger #5 does not apply); recorded as a cohesion concern in `docs/walkthroughs/CONFIG_WALKTHROUGH.md §3`.
 
 ## 8. Glossary

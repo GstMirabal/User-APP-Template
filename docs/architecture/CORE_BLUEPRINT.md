@@ -2,9 +2,9 @@
 **File**: `docs/architecture/CORE_BLUEPRINT.md` (RA-06 Option B naming)
 **Status**: `DRAFT`
 **Sprint of origin**: #000
-**Last Audit Sprint**: #001
+**Last Audit Sprint**: #002
 **Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: 86cc29b
+**Last Audit Commit SHA**: aa4e5db
 
 ---
 

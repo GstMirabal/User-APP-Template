@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: CORE
 **File**: `docs/walkthroughs/CORE_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #001
+**Last updated**: Sprint #002
 
 ---
 
@@ -13,6 +13,7 @@
 | #000 | Retroactive documentation | Module reverse-engineered into `docs/architecture/CORE_BLUEPRINT.md`. |
 | #001 | Health endpoint repaired | `status=` replaces the invalid `status_code=`; healthy and degraded paths both covered by tests. |
 | #001 | Admin-integrity system check | `apps/core/checks.py` (`core.E001`) constructs every registered admin form and inline formset at startup. |
+| #002 | Health probe reports on a real backend | With `CACHES` configured (ADR-0001), the cache probe exercises Redis instead of an in-process dict that cannot fail. |
 
 ## 2. Current state
 
@@ -30,7 +31,7 @@ Implements: `docs/architecture/CORE_BLUEPRINT.md`.
 
 | Item | Severity | Marked as | Tracked where |
 | :--- | :--- | :--- | :--- |
-| The cache probe reports on Django's default `LocMemCache`, which is per-process and always healthy. It cannot detect a real shared backend being down. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P0-7 |
+| The health endpoint is unauthenticated and reports which subsystem is down, which is mild reconnaissance value for an attacker. Standard for a liveness probe, but worth restricting at the ingress. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-9 |
 | `test_config.py` still mixes Django `TestCase` with the pytest idiom used everywhere else, and `test_settings_load_correctly` asserts `True`. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
 
 ## 4. How to operate it
