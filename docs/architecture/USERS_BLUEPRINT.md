@@ -18,15 +18,15 @@ The `users` module is the identity domain of django-users-app. It owns the custo
 
 | Aspect | Value |
 | :--- | :--- |
-| **Upstream dependencies** | `backend/utils/encryption.py` (Fernet + HMAC blind index), `backend/config/settings.py` (`MASTER_KEY`, `ENCRYPTION_PEPPER`, `AUTH_USER_MODEL`), `django.contrib.auth`, `rest_framework`, `rest_framework_simplejwt`, `pyotp`, Django cache framework. |
-| **Downstream consumers** | `backend/config/urls.py` (mounts at `/api/v1/users/`), `axes` (via `AUTHENTICATION_BACKENDS`), Django admin, any external API client. |
+| **Upstream dependencies** | `users/encryption.py` (Fernet + HMAC blind index), the host's settings (`MASTER_KEY`, `ENCRYPTION_PEPPER`, `AUTH_USER_MODEL`), `django.contrib.auth`, `rest_framework`, `rest_framework_simplejwt`, `pyotp`, Django cache framework. |
+| **Downstream consumers** | The host's root URLconf, which includes `users.urls` at a prefix of its choosing, `axes` (via `AUTHENTICATION_BACKENDS`), Django admin, any external API client. |
 
 ## 3. Building Block View
 
 | Aspect | Value |
 | :--- | :--- |
-| **Owns** | `backend/apps/users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `step_up.py`, `admin.py`, `urls.py`, `migrations/`. |
-| **Must not touch** | `backend/config/settings.py`, `backend/apps/core/`, `backend/utils/encryption.py` (consumes, never edits), other apps' migrations. |
+| **Owns** | `users/` — `models/`, `serializers/`, `tests/`, `views.py`, `managers.py`, `permissions.py`, `services.py`, `signals.py`, `step_up.py`, `admin.py`, `urls.py`, `migrations/`, plus `encryption.py`, `defaults.py`, `events.py`, `checks.py`, `throttling.py`. |
+| **Must not touch** | The host's settings module, the host's own apps, other apps' migrations. The app reads its configuration through `users/defaults.py` and never writes to `django.conf.settings`. |
 
 Contracts (formal interfaces this module exposes):
 
@@ -87,7 +87,7 @@ Manager layer:
 
 | Concept | Implementation |
 | :--- | :--- |
-| **Encryption at rest** | Fernet symmetric encryption keyed by `settings.MASTER_KEY`; `set_sensitive_data`/`get_sensitive_data` are the only sanctioned accessors. Decryption failure is logged at `CRITICAL` and returns `None` rather than raising. |
+| **Encryption at rest** | Fernet symmetric encryption keyed by `settings.MASTER_KEY`; `set_sensitive_data`/`get_sensitive_data` are the only sanctioned accessors. Decryption failure is logged at `CRITICAL` and returns `None`. |
 | **Searchable ciphertext** | HMAC-SHA256 blind index keyed by `settings.ENCRYPTION_PEPPER`, stored alongside each encrypted column that needs exact-match lookup. |
 | **Soft deletion** | `deleted_at` on `User`, `UserProfile`, `UserSecret`; propagated in one `transaction.atomic()` block. Default manager filters them out. |
 | **Circular-import avoidance** | `signals.py` and `managers.py` resolve satellite models lazily via `apps.get_model()` (RA-02 `LAZY_SIGNAL_PARADIGM`). |
@@ -98,7 +98,7 @@ Manager layer:
 
 | Constraint | Verification |
 | :--- | :--- |
-| No PII column is stored in plaintext. | `grep -n "_encrypted" backend/apps/users/models/secrets.py` — every PII field ends in `_encrypted`; assert no sibling plaintext column exists. |
+| No PII column is stored in plaintext. | `grep -n "_encrypted" users/models/secrets.py` — every PII field ends in `_encrypted`; assert no sibling plaintext column exists. |
 | Secrets are never readable through the API. | Every field in `UserSecretSerializer` declares `write_only=True`. |
 | Anonymization is irreversible. | `SoftDeleteQuerySet.restore()` filters `is_anonymized=False`, so anonymized rows can never be restored. |
 | Audit history cannot be physically deleted. | `AuditQuerySet.hard_delete()` raises `NotImplementedError`. |
@@ -108,14 +108,14 @@ Manager layer:
 | Step-up gated endpoints must be reachable by both client styles. | `test_step_up.py` covers session and bearer-token paths. |
 | The admin must never render a stored secret value. | `UserSecretInline.fields` is an allow-list of derived indicators; `test_admin_does_not_render_secret_ciphertext`. |
 | Satellite models always exist for a live user. | `post_save` receiver runs inside `transaction.atomic()`; failure rolls the user creation back. |
-| `MASTER_KEY` and `ENCRYPTION_PEPPER` must be present at boot. | `backend/config/settings.py:163-166` raises `ValueError` when either is unset. |
+| `MASTER_KEY` and `ENCRYPTION_PEPPER` must be present at boot. | `users/encryption.py` raises `ImproperlyConfigured` when either is unset; the host declares them (`docs/contracts/USERS_CONTRACT.md`, *Host requirements*). |
 
 ## 7. Decisions
 
 This module's ADR log — link, don't restate:
 
 - `docs/decisions/ADR-0002-hybrid-step-up-authentication.md`: step-up resolves through the session and a shared-cache grant, so token clients can reach gated endpoints.
-- `docs/decisions/ADR-0004-dedicated-encrypted-otp-storage.md`: the verification code gets its own encrypted column with an expiry, instead of overwriting a credential column in plaintext.
+- `docs/decisions/ADR-0004-dedicated-encrypted-otp-storage.md`: the verification code has its own encrypted column, with an expiry.
 - `docs/decisions/ADR-0005-generic-secret-vault.md`: exchange-specific columns removed; the vault and its endpoint serve generic identity data.
 
 Still undocumented, inherited (retroactive candidates, `§3.1` triggers in brackets):
@@ -131,7 +131,7 @@ Still undocumented, inherited (retroactive candidates, `§3.1` triggers in brack
 | **Blind index** | HMAC-SHA256 digest of a plaintext value, stored beside the ciphertext so exact-match queries work without decryption. |
 | **Step-Up Auth** | A re-authentication proving password possession within the last 5 minutes, required before secrets or anonymization. |
 | **Satellite model** | `UserProfile` / `UserSecret` — 1:1 records auto-created by the `post_save` signal and lifecycle-bound to their `User`. |
-| **Soft delete** | Setting `deleted_at` instead of issuing SQL `DELETE`; the row stays reachable through `audit_objects`. |
+| **Soft delete** | Setting `deleted_at`; no SQL `DELETE` is issued, and the row stays reachable through `audit_objects`. |
 | **Anonymization** | Destructive, irreversible PII erasure that keeps the row for referential integrity. |
 
 ---
