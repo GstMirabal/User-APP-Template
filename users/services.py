@@ -10,7 +10,7 @@ import pyotp
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .defaults import verification_otp_ttl_minutes
+from .defaults import two_factor_issuer_name, verification_otp_ttl_minutes
 
 if TYPE_CHECKING:
     from .models.user import User
@@ -156,7 +156,7 @@ class VerificationService:
         user.secrets.save()
 
         otp_uri = pyotp.totp.TOTP(secret).provisioning_uri(
-            name=user.email, issuer_name="User-APP-Template"
+            name=user.email, issuer_name=two_factor_issuer_name()
         )
 
         return {"secret": secret, "otp_uri": otp_uri, "recovery_codes": recovery_list}

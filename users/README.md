@@ -1,166 +1,71 @@
-<div align="center">
+# `users`
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+Identity and access management for Django: accounts, credentials, two-factor
+authentication and encrypted personal data.
 
-</div>
+This file travels with the package. If you are reading it inside a vendored
+copy, the full documentation lives at
+[GstMirabal/django-users-app](https://github.com/GstMirabal/django-users-app).
 
-<a name="readme-top"></a>
+## What is in here
 
-<h3 align="center">User-APP-Template Users Application</h3>
+| Module | Holds |
+| :--- | :--- |
+| `models/` | `User` (email login, UUID primary key), `UserProfile`, `UserSecret`, `UserSecretAudit` |
+| `serializers/` | Request and response shapes for the nine endpoints |
+| `views.py` | The viewset behind `users.urls` |
+| `services.py` | Verification codes and TOTP enrolment |
+| `encryption.py` | Fernet encryption and HMAC blind indexing |
+| `step_up.py` | Re-authentication grants, held in the cache and the session |
+| `permissions.py` | `IsVerified` and `RequiresStepUp` |
+| `defaults.py` | Settings this app reads, and the fallbacks it applies |
 
-<p align="center">
-  Security-first Identity and Access Management (IAM) for the User-APP-Template Ecosystem.
-<br /><br />
-<a href="https://github.com/GstMirabal/User-APP-Template"><strong>Explore the docs »</strong></a>
-<br />
-·
-<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
-·
-<a href="https://github.com/GstMirabal/User-APP-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
-</p>
+## Installing it
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul><li><a href="#built-with">Built With</a></li></ul>
-    </li>
-    <li>
-      <a href="#key-security-features">Key Security Features</a>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation & Configuration</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#testing">Testing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-  </ol>
-</details>
-
-## About The Project
-
-The `users` application is the core security engine of User-APP-Template. It handles authentication, authorization, and the secure storage of sensitive exchange credentials using a "Zero-Knowledge" inspired architecture where API keys are encrypted at rest and never exposed back through the API.
-
-### Built With
-
-* ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
-* ![Django](https://img.shields.io/badge/django-%23092e20.svg?style=for-the-badge&logo=django&logoColor=white)
-* ![DRF](https://img.shields.io/badge/DJANGO-REST-ff1709?style=for-the-badge&logo=django&logoColor=white)
-* ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
-* ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Key Security Features
-
-* **JWT Authentication**: Stateless session management with rotating refresh tokens.
-* **Encryption Vault**: Asymmetric encryption for Binance API keys using a Master Key architecture.
-* **OTP Verification**: Mandatory 6-digit code verification for high-risk operations.
-* **2FA (TOTP)**: Dual-layer security compatible with Google Authenticator.
-* **RBAC (Role-Based Access Control)**: Hierarchical access levels (Free, Premium, Admin).
-* **Paranoid Admin**: A custom Django Admin panel that obscures all sensitive keys and prevents accidental deletions.
-* **GDPR Compliance**: Irreversible account anonymization and soft-delete managers.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Getting Started
-
-### Prerequisites
-
-* Python 3.13+
-* Docker & Docker Compose
-* PostgreSQL (Running via Docker)
-
-### Installation & Configuration
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/GstMirabal/User-APP-Template.git
-   cd User-APP-Template
-   ```
-
-2. **Environment Setup**
-   Configure your `.env` and `config.toml` files with the following keys:
-   * `DJANGO_SECRET_KEY`
-   * `MASTER_KEY` (32-byte Fernet key)
-   * `ENCRYPTION_PEPPER`
-
-3. **Install Dependencies**
-   ```bash
-   ./venv/bin/pip install -r requirements.txt
-   ```
-
-4. **Run Migrations**
-   ```bash
-   python backend/manage.py migrate
-   ```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Usage
-
-### API Endpoints
-
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/v1/auth/token/` | POST | Obtain JWT tokens. |
-| `/api/v1/users/register/` | POST | Initial account creation. |
-| `/api/v1/users/verify/` | POST | Verify account with OTP. |
-| `/api/v1/users/me/2fa/setup/`| POST | Configure Google Authenticator. |
-| `/api/v1/users/me/secrets/` | PATCH | Update encrypted API keys (Write-Only). |
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-## Testing
-
-We use `pytest` and `factory-boy` for testing.
-
-```bash
-export DJANGO_SETTINGS_MODULE=config.settings
-pytest backend/apps/users/tests.py
+```python
+INSTALLED_APPS = [..., "rest_framework", "rest_framework_simplejwt",
+                  "rest_framework_simplejwt.token_blacklist", "axes", "users"]
+AUTH_USER_MODEL = "users.User"
 ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+```python
+urlpatterns = [path("api/v1/users/", include("users.urls"))]
+```
 
-## License
+> [!IMPORTANT]
+> `AUTH_USER_MODEL` can only be set before a project's first migration, so this
+> app goes into a **new** project. It cannot be added to one that already has
+> auth data.
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Four things must come from the host — `MASTER_KEY`, `ENCRYPTION_PEPPER`, a cache
+shared across workers, and `AXES_USERNAME_FORM_FIELD = "username"`. Each is
+explained, with the reason it cannot be defaulted, in
+[`USERS_CONTRACT.md`](../docs/contracts/USERS_CONTRACT.md).
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## What the vault stores
 
-## Contact
+`UserSecret` holds `dni`, `phone_number` and `date_of_birth`. They are encrypted
+at rest with Fernet — symmetric AES-CBC with an HMAC, not a key pair — and
+blind-indexed so exact-match lookup still works without decrypting a column.
 
-Gustavo Mirabal Suarez - gst.mirabal@gmail.com
+Every field is **write-only through the API**: a stored value can be replaced
+but never read back, and the response echoes nothing. Each write appends a
+`UserSecretAudit` row carrying the client address. Writing requires a verified
+account and a re-authentication within the step-up window.
 
-- LinkedIn: [@Gustavo-Mirabal](https://www.linkedin.com/in/gstmirabal/)
-- GitHub: [@GstMirabal](https://github.com/GstMirabal)
+## Security features
 
-Project Link: [https://github.com/GstMirabal/User-APP-Template](https://github.com/GstMirabal/User-APP-Template)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/GstMirabal/User-APP-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/GstMirabal/User-APP-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/GstMirabal/User-APP-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/GstMirabal/User-APP-Template/issues
-[license-shield]: https://img.shields.io/github/license/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[license-url]: https://github.com/GstMirabal/User-APP-Template/blob/main/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/gstmirabal/
+* **JWT authentication** — stateless sessions with rotating refresh tokens and
+  a blacklist.
+* **TOTP two-factor** — compatible with any authenticator app, with recovery
+  codes issued once and anti-replay that holds across workers.
+* **Step-up authentication** — sensitive writes and irreversible deletion
+  require a recent password re-entry, for session and bearer-token clients.
+* **Brute-force protection** — `django-axes` lockout covering `/me/reauth/` as
+  well as login.
+* **Role-based access** — `role` on the profile is read-only through the API, so
+  an account cannot promote itself.
+* **Restrained admin** — the inline for encrypted fields is an allow-list, so a
+  new encrypted column is not exposed to the admin DOM by default.
+* **GDPR anonymisation** — irreversible erasure layered on soft deletion.
+  `restore()` refuses an anonymised row.

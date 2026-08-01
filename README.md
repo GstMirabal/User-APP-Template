@@ -12,7 +12,7 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="docs/assets/logo/banner.svg" alt="User-APP-Template" width="100%">
+  <img src="docs/assets/logo/banner.svg" alt="django-users-app" width="100%">
 </div>
 
 <p align="center">
@@ -22,9 +22,9 @@
 <a href="docs/contracts/USERS_CONTRACT.md"><strong>Read the API contract »</strong></a>
 <br />
 ·
-<a href="https://github.com/GstMirabal/User-APP-Template/issues/new/choose">Report Bug</a>
+<a href="https://github.com/GstMirabal/django-users-app/issues/new/choose">Report Bug</a>
 ·
-<a href="https://github.com/GstMirabal/User-APP-Template/issues/new/choose">Request Feature</a>
+<a href="https://github.com/GstMirabal/django-users-app/issues/new/choose">Request Feature</a>
 </p>
 
 <!-- TABLE OF CONTENTS -->
@@ -108,7 +108,7 @@ or add this repository as a submodule and symlink the package — then install
 the dependencies it declares:
 
 ```bash
-git clone https://github.com/GstMirabal/User-APP-Template.git /tmp/users-app
+git clone https://github.com/GstMirabal/django-users-app.git /tmp/users-app
 cp -r /tmp/users-app/users your-project/
 pip install -r /tmp/users-app/requirements.txt
 ```
@@ -170,7 +170,7 @@ database or cache service is needed.
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements-dev.txt
 
-pytest -q          # 50 tests, in-RAM SQLite
+pytest -q          # 51 tests, in-RAM SQLite
 ruff check .
 ```
 
@@ -223,20 +223,20 @@ Gustavo Mirabal Suarez - gst.mirabal@gmail.com
 - GitHub: [@GstMirabal](https://github.com/GstMirabal)
 - Twitter: [@GstMirabal](https://x.com/gst_mirabal)
 
-Project Link: [https://github.com/GstMirabal/User-APP-Template](https://github.com/GstMirabal/User-APP-Template)
+Project Link: [https://github.com/GstMirabal/django-users-app](https://github.com/GstMirabal/django-users-app)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/GstMirabal/User-APP-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/GstMirabal/User-APP-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/GstMirabal/User-APP-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/GstMirabal/User-APP-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/GstMirabal/User-APP-Template/issues
+[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/django-users-app.svg?style=for-the-badge
+[contributors-url]: https://github.com/GstMirabal/django-users-app/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/GstMirabal/django-users-app.svg?style=for-the-badge
+[forks-url]: https://github.com/GstMirabal/django-users-app/network/members
+[stars-shield]: https://img.shields.io/github/stars/GstMirabal/django-users-app.svg?style=for-the-badge
+[stars-url]: https://github.com/GstMirabal/django-users-app/stargazers
+[issues-shield]: https://img.shields.io/github/issues/GstMirabal/django-users-app.svg?style=for-the-badge
+[issues-url]: https://github.com/GstMirabal/django-users-app/issues
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge
-[license-url]: https://github.com/GstMirabal/User-APP-Template/blob/main/LICENSE.txt
+[license-url]: https://github.com/GstMirabal/django-users-app/blob/main/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/gstmirabal/

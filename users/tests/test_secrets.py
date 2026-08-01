@@ -154,6 +154,27 @@ def test_setup_2fa_is_a_staticmethod() -> None:
 
 
 @pytest.mark.django_db
+def test_two_factor_issuer_comes_from_the_host() -> None:
+    """The authenticator label names the host's service, not this app.
+
+    It is the line a user reads in Google Authenticator beside their account,
+    so it has to be the product they think they are protecting. It was a
+    hardcoded repository name, which every installation would have inherited.
+    """
+    from django.test import override_settings
+
+    user = VerifiedUserFactory()
+
+    with override_settings(TWO_FACTOR_ISSUER_NAME="Acme Payments"):
+        uri = VerificationService.setup_2fa(user)["otp_uri"]
+
+    assert "issuer=Acme%20Payments" in uri, uri
+    assert "User-APP" not in uri and "django-users-app" not in uri, (
+        "the provisioning URI still carries this repository's name"
+    )
+
+
+@pytest.mark.django_db
 def test_anonymisation_clears_the_whole_vault() -> None:
     """Every encrypted column must be nulled, not just the ones once listed."""
     from django.contrib.auth import get_user_model

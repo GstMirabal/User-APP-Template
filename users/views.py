@@ -109,7 +109,7 @@ class UserViewSet(GenericViewSet):
     @transaction.atomic
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request: Request) -> Response:
-        """Register a new User-APP-Template user account."""
+        """Create an account and issue its email verification code."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

@@ -35,7 +35,11 @@ class Address(models.Model):
 
 
 class User(AbstractUser):
-    """Custom User model for User-APP-Template."""
+    """Account model keyed on email, with a UUID primary key.
+
+    Replaces Django's default User, so a host project must set
+    ``AUTH_USER_MODEL = "users.User"`` before its first migration.
+    """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(_("Email address"), unique=True)
