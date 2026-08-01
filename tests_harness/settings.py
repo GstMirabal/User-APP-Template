@@ -93,8 +93,9 @@ AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 # From axes 8 the default is derived from `get_user_model().USERNAME_FIELD`
 # (`email` here), while Django's `AuthenticationForm` always names its field
 # `username`. Unset, axes then records every admin/LoginView failure as
-# `username=None` and lockout silently degrades to per-IP. Harmless on axes
-# 6.5.1, where the default is the literal `"username"`. See
+# `username=None` and lockout silently degrades to per-IP. The older default
+# (a literal `"username"`, up to 6.5.1) needed nothing here, which is why
+# requirements.txt floors axes at 8.3: one behaviour to document, not two. See
 # docs/contracts/USERS_CONTRACT.md, "Host requirements".
 AXES_USERNAME_FORM_FIELD = "username"
 

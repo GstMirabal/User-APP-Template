@@ -181,6 +181,6 @@ The app is not self-contained. A host project must provide:
 | `MASTER_KEY`, `ENCRYPTION_PEPPER` | Fernet encryption and blind indexing of every stored secret. |
 | **A cache shared across workers** | TOTP anti-replay and step-up grants. On a per-process backend both silently fail under more than one worker — the request lands on a worker that never saw the earlier state. |
 | `users.urls` included | Nothing is routed otherwise. |
-| `AXES_USERNAME_FORM_FIELD = "username"`, if `django-axes` 8 or later is installed | This app logs in by email, and from axes 8 the setting defaults to the model's `USERNAME_FIELD`. Django's own login form (`/admin/login/`, `LoginView`) names its field `username` regardless, so axes finds no matching key and stores every failed attempt as `username=None` — lockout degrades from per-account to per-IP and `AXES_RESET_ON_SUCCESS` stops matching. No exception is raised. |
+| `AXES_USERNAME_FORM_FIELD = "username"` | This app logs in by email, and `django-axes` 8 defaults this to the model's `USERNAME_FIELD`. Django's own login form (`/admin/login/`, `LoginView`) names its field `username` regardless, so axes finds no matching key and stores every failed attempt as `username=None` — lockout degrades from per-account to per-IP and `AXES_RESET_ON_SUCCESS` stops matching. No exception is raised. |
 
 Optional, with defaults: `STEP_UP_WINDOW_SECONDS` (300), `VERIFICATION_OTP_TTL_MINUTES` (15).
