@@ -1,0 +1,33 @@
+version: 2
+
+# Grouped on purpose. Ungrouped, a quiet week still opens one pull request per
+# package, and a review queue nobody reads is the same as no review queue —
+# which is how this repository ended up floored at a Django release carrying a
+# critical SQL injection.
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      # Routine version movement: one pull request, one review.
+      runtime:
+        applies-to: version-updates
+        patterns: ["*"]
+        exclude-patterns: ["pytest*", "ruff", "factory-boy"]
+      tooling:
+        applies-to: version-updates
+        patterns: ["pytest*", "ruff", "factory-boy"]
+      # Security updates stay ungrouped: they are read one at a time, and a
+      # batch hides which advisory is being answered.
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        applies-to: version-updates
+        patterns: ["*"]

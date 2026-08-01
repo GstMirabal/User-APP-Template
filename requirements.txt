@@ -7,14 +7,21 @@
 #
 # Development and test tooling lives in requirements-dev.txt.
 #
-# Lower bounds state what the suite has been run against, not what is merely
-# expected to work. A floor here is a support claim, so it moves only after the
-# combination has actually been executed.
+# Lower bounds have to satisfy two separate things, and passing one is not
+# passing the other:
+#
+#   1. The suite has actually been executed at that version.
+#   2. The version is not inside a published advisory range.
+#
+# An earlier revision of this file only checked the first, and floored Django
+# at 5.2 — a range that includes 5.2.7 and its critical SQL injection via the
+# `_connector` keyword. Working and safe are different claims.
 
-# Verified at both ends of this range: 5.2.16 (LTS) and 6.0.7.
-Django>=5.2,<7.0
+# Verified at both ends of this range: 5.2.16 (LTS) and 6.0.7. The floor also
+# clears the 5.2.15 advisory line.
+Django>=5.2.16,<7.0
 djangorestframework>=3.17
-djangorestframework-simplejwt>=5.5
+djangorestframework-simplejwt>=5.5.1
 
 # Floor raised past 7.x deliberately. Up to 6.5.1 the AXES_USERNAME_FORM_FIELD
 # default was the literal "username"; from 8.x it is derived from the user
@@ -25,12 +32,15 @@ djangorestframework-simplejwt>=5.5
 # a version the host chooses, which is precisely the ambiguity worth removing.
 django-axes>=8.3
 
-# Fernet encryption and HMAC blind indexing of every stored secret.
-cryptography>=46.0
+# Fernet encryption and HMAC blind indexing of every stored secret. The floor
+# is the first release clear of the advisories affecting the 46 and 48.0.0
+# lines — both of which the suite passes on, which is exactly why passing was
+# never sufficient grounds to floor there.
+cryptography>=48.0.1
 
 # TOTP enrolment and verification.
 pyotp>=2.10
 
 # Required by UserProfile.avatar (ImageField). Django refuses an ImageField
 # without it, and the failure is a system check error at startup.
-Pillow>=12.0
+Pillow>=12.3.0
