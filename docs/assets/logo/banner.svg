@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="User-APP-Template — Django identity and access management app">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="django-users-app — Django identity and access management app">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b2b26"/>
@@ -21,7 +21,7 @@
   </g>
 
   <g fill="#ffffff" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif">
-    <text x="290" y="128" font-size="62" font-weight="700" letter-spacing="-1">User-APP-Template</text>
+    <text x="290" y="128" font-size="58" font-weight="700" letter-spacing="-1">django-users-app</text>
     <text x="292" y="176" font-size="26" font-weight="400" fill="#a7d9c4">
       Identity and access management for Django
     </text>

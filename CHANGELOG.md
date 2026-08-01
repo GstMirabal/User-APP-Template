@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [2.0.0] - 2026-08-01
+
 ### Sprint #004 — App / Extraction
 
 **This repository is no longer a Django project.** It is the `users`
