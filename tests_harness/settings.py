@@ -9,11 +9,16 @@ A real project supplies its own settings; see `docs/contracts/USERS_CONTRACT.md`
 "Host requirements".
 """
 
+import secrets
 from pathlib import Path
+
+from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "harness-only-not-a-real-secret-padded-to-fifty-plus-chars"
+# Generated per run for the same reason as MASTER_KEY below: nothing in this
+# file should be a value a reader could mistake for one worth copying.
+SECRET_KEY = secrets.token_urlsafe(64)
 DEBUG = True
 ALLOWED_HOSTS: list[str] = []
 
@@ -77,10 +82,20 @@ CACHES = {
 # that already has auth data.
 AUTH_USER_MODEL = "users.User"
 
-# Fernet key and blind-index pepper. Throwaway values: the suite asserts the
-# encryption round-trip, not the strength of these particular bytes.
-MASTER_KEY = "kQ0Yy1s6t7uZ8vW9xA2bC3dE4fG5hI6jK7lM8nO9pQ0="
-ENCRYPTION_PEPPER = "harness-pepper-not-a-real-secret"
+# Fernet key and blind-index pepper, generated fresh for each run.
+#
+# These were literals until Sprint #004. They were never real secrets, but a
+# committed Fernet key is indistinguishable from a live one to a scanner, to a
+# reader, and — the part that matters — to whoever copies this file as the
+# starting point for a real host, which is exactly what it is documented as.
+# They would have inherited a key published on GitHub for encrypting personal
+# data.
+#
+# Generating them here also proves something the literals could not: the app
+# derives everything from these settings and holds no key of its own, since a
+# value that changes on every run cannot have been baked in anywhere.
+MASTER_KEY = Fernet.generate_key().decode()
+ENCRYPTION_PEPPER = secrets.token_hex(32)
 
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
