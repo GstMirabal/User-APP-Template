@@ -1,9 +1,21 @@
 # 📜 ADR-0003: Separate JWT signing key from SECRET_KEY
-**Status**: `Accepted`
+**Status**: `Superseded` (Sprint #004)
 **Date**: 2026-07-30
 **Triggers**: 3 (`rules/documentation_standard.md §3.1`)
 
 ---
+
+> [!NOTE]
+> **Superseded, not reversed.** Sprint #004 reduced this repository to an
+> installable app, and the settings this decision changed —
+> `SIMPLE_JWT["SIGNING_KEY"]`, `config.toml`, `generate_secrets.py` — went with
+> the scaffolding. Nothing here configures JWT any more, so the decision no
+> longer has anything to bind to in this codebase.
+>
+> The reasoning still holds for anyone installing this app, and is why
+> `JWT_SIGNING_KEY` appears under *Host requirements* in
+> [`USERS_CONTRACT.md`](../contracts/USERS_CONTRACT.md). Read the record below
+> for why the two keys should not be shared; read the contract for what to set.
 
 ## 1. Context
 

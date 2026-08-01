@@ -4,7 +4,7 @@
   "owner_linkedin_url": "https://www.linkedin.com/in/gstmirabal/",
   "owner_x_url": "",
   "repo_slug": "GstMirabal/User-APP-Template",
-  "banner_path": "",
+  "banner_path": "docs/assets/logo/banner.svg",
   "governed_by_agents": true,
   "project_name": "User-APP-Template",
   "project_description": "Security-first Identity and Access Management (IAM) template for professional Django applications: custom user identity, encrypted PII with blind indexing, TOTP two-factor authentication, GDPR anonymization, and brute-force protection.",

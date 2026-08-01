@@ -184,3 +184,26 @@ The app is not self-contained. A host project must provide:
 | `AXES_USERNAME_FORM_FIELD = "username"` | This app logs in by email, and `django-axes` 8 defaults this to the model's `USERNAME_FIELD`. Django's own login form (`/admin/login/`, `LoginView`) names its field `username` regardless, so axes finds no matching key and stores every failed attempt as `username=None` — lockout degrades from per-account to per-IP and `AXES_RESET_ON_SUCCESS` stops matching. No exception is raised. |
 
 Optional, with defaults: `STEP_UP_WINDOW_SECONDS` (300), `VERIFICATION_OTP_TTL_MINUTES` (15).
+
+### Strongly recommended
+
+| Setting | Why |
+| :--- | :--- |
+| `SIMPLE_JWT["SIGNING_KEY"]` set to a value of its own, not `SECRET_KEY` | HS256 is symmetric, so the verification key and the signing key are the same bytes: disclosure of `SECRET_KEY` becomes the ability to mint a token for any user id. The two also rotate differently — rotating `SECRET_KEY` drops sessions and reset links, rotating the JWT key drops every outstanding token for every API client. Sharing one value forces both consequences whenever either is needed. Full reasoning in [ADR-0003](../decisions/ADR-0003-separate-jwt-signing-key.md). |
+
+### Generating the required keys
+
+`MASTER_KEY` must be a valid Fernet key and `ENCRYPTION_PEPPER` a high-entropy
+value; neither is something to invent by hand.
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"   # MASTER_KEY
+python -c "import secrets; print(secrets.token_hex(32))"                                    # ENCRYPTION_PEPPER
+python -c "import secrets; print(secrets.token_urlsafe(64))"                                # SIMPLE_JWT signing key
+```
+
+**Rotating `MASTER_KEY` or `ENCRYPTION_PEPPER` after data exists makes the
+stored secrets unreadable.** Ciphertext is decryptable only with the key that
+wrote it, and a blind index is only searchable under the pepper that built it.
+Neither is re-derivable from the stored value, so rotation means re-encrypting
+and re-indexing every row while the old values are still available.

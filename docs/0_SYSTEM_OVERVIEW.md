@@ -84,9 +84,8 @@ Run `/agents:start`. It will:
 | Document | Type | Covers |
 | :--- | :--- | :--- |
 | `docs/architecture/USERS_BLUEPRINT.md` | Reference | Identity domain (models, endpoints, crypto, anonymization). |
-| `docs/architecture/CORE_BLUEPRINT.md` | Reference | Health check and password complexity validator. |
-| `docs/architecture/CONFIG_BLUEPRINT.md` | Reference | Settings, security headers, JWT/Axes/throttling, routing. |
-| `docs/walkthroughs/*_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
+| `docs/contracts/USERS_CONTRACT.md` | Reference | The REST surface and what a host must provide. |
+| `docs/walkthroughs/USERS_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
 | `docs/roadmaps/GLOBAL_ROADMAP.md` | Future | Prioritized remediation and feature backlog. |
 | `docs/sprints/000-backend-identity/` | History | The Scenario C onboarding audit record. |
 | `docs/sprints/001-backend-verification/` | History | Repair of five blocking defects; test harness and CI restored. |
