@@ -1,6 +1,6 @@
 # 🏁 Walkthrough: USERS
 **File**: `docs/walkthroughs/USERS_WALKTHROUGH.md` (RA-06 Option B naming)
-**Last updated**: Sprint #003
+**Last updated**: Sprint #004
 
 ---
 
@@ -28,17 +28,15 @@
 
 ## 2. Current state
 
-The identity domain is feature-complete, verified, and — as of Sprint #002 — no longer carrying the security defects the audit found. 77 tests pass against an in-RAM database.
+The identity domain is an installable Django application, not a project. 61 tests pass here against an in-RAM database, and 79 pass with the app vendored into `Django-Pro-Template` — the second number is the one that means anything, because it is the only run that exercises the app somewhere the test harness did not set the table.
 
-Step-up authentication works for both client styles. This is the headline change: `PATCH /me/secrets/` and `POST /me/anonymize/` were unreachable for every bearer-token client, which is the project's own primary authentication mechanism. `/me/reauth/` now re-authenticates through the auth backend, so Axes counts failed attempts against it.
+Sprint #004's audit found sixteen defects, two of them blocking, in code that three previous sprints had declared clean. The worst was that **no account created through the API could ever be verified**: registration issued a code, encrypted it, dropped the plaintext, and told the user to check an email nothing had sent. A suite of 51 tests passed throughout, because none of them followed a user from registration to a verified account.
 
-The registration code has its own Fernet-encrypted column with an expiry, is compared in constant time, is recorded in `UserSecretAudit`, and is never logged. Issuing one no longer destroys a stored exchange credential. Both the code and the 2FA recovery codes come from `secrets` rather than `random`.
+Delivery is now announced through `verification_code_issued` and performed by the host. The app does not send mail, and the `users.W001` system check reports a host that has connected nothing — silence being the failure mode, it needed something louder than a paragraph in a contract.
 
-The admin exposes derived booleans and timestamps only; no stored secret value reaches the DOM.
+Two further defects were invisible to this repository's own suite and always would have been. The harness declares `DEFAULT_THROTTLE_RATES["sensitive"]`, so every throttled endpoint passed here while returning `500` in a real project; it also configures DRF authentication, hiding that a host must enable `JWTAuthentication` before a bearer client gets past `403`. Both were found by vendoring, not by reading.
 
-What remains open is genericity rather than security: exchange-specific columns, Spanish strings, and the half-wired Celery stub. All are Sprint #003 work.
-
-Implements: `docs/architecture/USERS_BLUEPRINT.md`.
+Implements: `docs/architecture/USERS_BLUEPRINT.md`. Consumed per `docs/contracts/USERS_CONTRACT.md`.
 
 ## 3. Known limitations / tech debt
 
@@ -47,6 +45,10 @@ Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 | No resend endpoint for an expired verification code; recovery is administrator re-issue. Needs its own rate limiting. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-9 |
 | A step-up grant is keyed by user id, so it applies to every concurrent session of that user, and survives the client discarding its token until the window lapses (ADR-0002 §3). | Medium | `:tech-debt:` | `ADR-0002` |
 | `test_api.py` hardcodes `/api/v1/users/me/2fa/activate/` because `reverse()` does not resolve that nested router action. | Low | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P2-7 |
+| No key rotation path: a plain `Fernet(MASTER_KEY)` and a single pepper, so changing either makes stored secrets unreadable and blind indexes unsearchable. | Medium | `:tech-debt:` | `docs/roadmaps/GLOBAL_ROADMAP.md` P1-11 |
+| `graphify-out/` still describes the pre-extraction tree; the graph was not rebuilt because `graphify` is not installed locally. | Low | `:tech-debt:` | Sprint #004 log §8 |
+
+**Resolved in Sprint #004**: registration codes undeliverable; throttled endpoints returning 500 in any host; `JWTAuthentication` unstated; axes lockout degraded to per-IP; `language_code` discarded; `anonymize()` leaving profile metadata; TOTP token and user emails in logs. Full list in `docs/audits/AUDIT_004_USERS_APP.md`.
 
 **Resolved in Sprint #003**: exchange-specific columns; Spanish strings; Celery stub; `setup_2fa` shape.
 
@@ -54,21 +56,25 @@ Implements: `docs/architecture/USERS_BLUEPRINT.md`.
 
 ## 4. How to operate it
 
+There is nothing to run. The app is installed into a host project — see
+*Installing It In Your Project* in the README, and *Host requirements* in
+`docs/contracts/USERS_CONTRACT.md`.
+
+To work on the app itself:
+
 ```bash
-# Bring up PostgreSQL (host port 5434)
-make db-up
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-dev.txt
 
-# Apply migrations
-make migrate
-
-# Run the development server
-make dev
-
-# Lint (clean)
-venv/bin/ruff check backend/
-
-# Tests — 52 passing, in-RAM SQLite, no Docker required
-make test
+pytest -q            # 61 tests, in-RAM SQLite, no services required
+ruff check .         # clean, with the S and G rule sets enabled
 ```
+
+The suite runs against `tests_harness/`, which deliberately declares neither
+`STEP_UP_WINDOW_SECONDS` nor `VERIFICATION_OTP_TTL_MINUTES`, and connects no
+receiver for `verification_code_issued`. Each omission is a claim the run
+re-proves: that the app defaults those settings itself, and that a host
+forgetting delivery is told so.
+
 ---
 *Updated at every Sprint Closeout touching this module (RA-05).*

@@ -10,12 +10,12 @@
   "current_sprint": {
     "id": "004",
     "slug": "004-app-extraction",
-    "status": "IN_PROGRESS",
+    "status": "CLOSED",
     "stack": "app",
     "layer": "extraction",
     "last_audit_sprint": 4,
     "last_audit_date": "2026-08-01",
-    "last_audit_commit_sha": "362131c"
+    "last_audit_commit_sha": "4d7f9ef"
   },
   "active_layer": "extraction",
   "active_app": "users",
@@ -23,11 +23,13 @@
     ".github/workflows/",
     "docs/architecture/",
     "docs/assets/logo/",
+    "docs/audits/",
     "docs/contracts/",
     "docs/decisions/",
     "docs/guides/",
     "docs/roadmaps/",
     "docs/sprints/",
+    "docs/sprints/004-app-extraction/",
     "docs/walkthroughs/",
     "tests_harness/",
     "users/",
