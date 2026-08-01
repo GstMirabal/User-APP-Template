@@ -1,35 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="django-users-app — Django identity and access management app">
+<svg viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="django-users-app — identity and access management for Django">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0b2b26"/>
-      <stop offset="55%" stop-color="#092e20"/>
-      <stop offset="100%" stop-color="#04140f"/>
+    <linearGradient id="paper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbfaf8"/>
+      <stop offset="60%" stop-color="#f6f4f0"/>
+      <stop offset="100%" stop-color="#eeebe4"/>
     </linearGradient>
-    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#44b78b"/>
-      <stop offset="100%" stop-color="#44b78b" stop-opacity="0"/>
+    <linearGradient id="rail" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a68a5b" stop-opacity="0.15"/>
+      <stop offset="35%" stop-color="#a68a5b"/>
+      <stop offset="100%" stop-color="#8a7049"/>
     </linearGradient>
   </defs>
 
-  <rect width="1200" height="300" fill="url(#bg)"/>
+  <rect width="1200" height="300" fill="url(#paper)"/>
+  <rect x="0" y="0" width="1200" height="1" fill="#ddd6c9"/>
+  <rect x="0" y="299" width="1200" height="1" fill="#ddd6c9"/>
 
-  <!-- Shield: identity and access management, the app's subject. -->
-  <g transform="translate(96 74)" fill="none" stroke="#44b78b" stroke-width="5">
-    <path d="M76 4 L140 30 V84 C140 122 112 146 76 156 C40 146 12 122 12 84 V30 Z" stroke-opacity="0.95"/>
-    <circle cx="76" cy="66" r="20"/>
-    <path d="M44 118 C44 96 58 88 76 88 C94 88 108 96 108 118" stroke-linecap="round"/>
+  <rect x="76" y="82" width="3" height="136" fill="url(#rail)"/>
+
+  <text x="108" y="108" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="12" font-weight="600" fill="#a68a5b" letter-spacing="8.5">DJANGO APPLICATION</text>
+
+  <text x="105" y="180" font-family="Georgia,'Times New Roman',Times,serif" font-size="68" font-weight="400" fill="#18202f" letter-spacing="0.5">django-users-app</text>
+
+  <text x="108" y="212" font-family="Georgia,'Times New Roman',Times,serif" font-size="17.5" font-style="italic" fill="#5d6474">Identity and access management, installed into your project</text>
+
+  <g font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="10.5" font-weight="600" fill="#8a7049" letter-spacing="3">
+    <rect x="108" y="238" width="58" height="26" fill="none" stroke="#ddd6c9"/>
+    <text x="137" y="255" text-anchor="middle">JWT</text>
+    <rect x="174" y="238" width="105" height="26" fill="none" stroke="#ddd6c9"/>
+    <text x="226" y="255" text-anchor="middle">TOTP 2FA</text>
+    <rect x="287" y="238" width="96" height="26" fill="none" stroke="#ddd6c9"/>
+    <text x="335" y="255" text-anchor="middle">STEP-UP</text>
+    <rect x="391" y="238" width="153" height="26" fill="none" stroke="#ddd6c9"/>
+    <text x="467" y="255" text-anchor="middle">ENCRYPTED PII</text>
   </g>
 
-  <g fill="#ffffff" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif">
-    <text x="290" y="128" font-size="58" font-weight="700" letter-spacing="-1">django-users-app</text>
-    <text x="292" y="176" font-size="26" font-weight="400" fill="#a7d9c4">
-      Identity and access management for Django
-    </text>
-  </g>
-
-  <rect x="292" y="200" width="620" height="3" fill="url(#rule)"/>
-
-  <g font-family="'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace" font-size="19" fill="#7fc4a6">
-    <text x="292" y="240">JWT  ·  TOTP 2FA  ·  step-up auth  ·  encrypted PII  ·  GDPR erasure</text>
-  </g>
+  <circle cx="1092" cy="150" r="46" fill="none" stroke="#a68a5b" stroke-opacity="0.75" stroke-width="1.2"/>
+  <circle cx="1092" cy="150" r="39" fill="none" stroke="#a68a5b" stroke-opacity="0.35" stroke-width="0.8"/>
+  <text x="1092" y="162" text-anchor="middle" font-family="Georgia,'Times New Roman',Times,serif" font-size="29" fill="#a68a5b" letter-spacing="1">IAM</text>
+  <text x="1092" y="222" text-anchor="middle" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="10" fill="#9a9484" letter-spacing="3.5">GSTMIRABAL</text>
 </svg>
