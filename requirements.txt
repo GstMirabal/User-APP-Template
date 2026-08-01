@@ -1,35 +1,46 @@
-# Runtime dependencies only. Development and test tooling lives in
-# requirements-dev.txt, which installs this file first.
+# Runtime dependencies of the `users` app only.
+#
+# Deliberately narrow: this is a Django app, not a project. Anything a host
+# supplies — database driver, WSGI server, static file handling, configuration
+# loading — is not listed here, because installing this app must not impose the
+# host's infrastructure choices.
+#
+# Development and test tooling lives in requirements-dev.txt.
+#
+# Lower bounds have to satisfy two separate things, and passing one is not
+# passing the other:
+#
+#   1. The suite has actually been executed at that version.
+#   2. The version is not inside a published advisory range.
+#
+# An earlier revision of this file only checked the first, and floored Django
+# at 5.2 — a range that includes 5.2.7 and its critical SQL injection via the
+# `_connector` keyword. Working and safe are different claims.
 
-anyio==4.11.0
-argon2-cffi-bindings==25.1.0
-argon2-cffi==25.1.0
-asgiref==3.10.0
-certifi==2025.10.5
-cffi==2.0.0
-cryptography==42.0.5
-dj-database-url==3.0.1
-django-axes==6.5.1
-django-cors-headers==4.9.0
-django-csp==4.0
-Django==5.2.7
-djangorestframework-simplejwt==5.3.1
-djangorestframework==3.15.2
-drf-spectacular==0.28.0
-envtoml==0.1.2
-h11==0.16.0
-httpcore==1.0.9
-httpx==0.28.1
-idna==3.11
-packaging==25.0
-Pillow==12.1.1
-psycopg2-binary==2.9.10
-pwned-passwords-django==5.2.0
-pycparser==2.23
-pyotp==2.9.0
-python-json-logger==4.0.0
-python-json-logger==4.0.0
-redis==5.2.1
-sniffio==1.3.1
-sqlparse==0.5.3
-toml==0.10.2
+# Verified at both ends of this range: 5.2.16 (LTS) and 6.0.7. The floor also
+# clears the 5.2.15 advisory line.
+Django>=5.2.16,<7.0
+djangorestframework>=3.17
+djangorestframework-simplejwt>=5.5.1
+
+# Floor raised past 7.x deliberately. Up to 6.5.1 the AXES_USERNAME_FORM_FIELD
+# default was the literal "username"; from 8.x it is derived from the user
+# model's USERNAME_FIELD. Because this app logs in by email, a host on the new
+# default silently records every failed admin/LoginView attempt as
+# `username=None` — see "Host requirements" in docs/contracts/USERS_CONTRACT.md.
+# Supporting both defaults at once would mean the requirement is conditional on
+# a version the host chooses, which is precisely the ambiguity worth removing.
+django-axes>=8.3
+
+# Fernet encryption and HMAC blind indexing of every stored secret. The floor
+# is the first release clear of the advisories affecting the 46 and 48.0.0
+# lines — both of which the suite passes on, which is exactly why passing was
+# never sufficient grounds to floor there.
+cryptography>=48.0.1
+
+# TOTP enrolment and verification.
+pyotp>=2.10
+
+# Required by UserProfile.avatar (ImageField). Django refuses an ImageField
+# without it, and the failure is a system check error at startup.
+Pillow>=12.3.0

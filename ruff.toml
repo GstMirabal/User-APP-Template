@@ -8,10 +8,14 @@
 
 target-version = "py313"
 line-length = 100
-exclude = ["backend/scripts", "venv", "migrations", ".agents"]
+exclude = ["venv", "migrations", ".agents"]
 
 [lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "SIM", "PTH", "TD", "ERA", "PL", "RUF"]
+# `S` (flake8-bandit) and `G` (flake8-logging-format) were added in Sprint
+# #004. Their absence from an identity application was itself an audit
+# finding: `G` alone would have caught, mechanically, three log calls that
+# interpolated a user's email into the record with an f-string.
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "SIM", "PTH", "TD", "ERA", "PL", "RUF", "S", "G"]
 ignore = [
     "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D203", "D213",
     "PLR2004",
@@ -30,10 +34,16 @@ ignore = [
 # These are namespaces evaluated once at class creation, not mutable defaults
 # shared between instances, and annotating them ClassVar contradicts the
 # documented style of both Django and DRF.
-"backend/apps/*/models/*.py" = ["RUF012"]
-"backend/apps/*/serializers/*.py" = ["RUF012"]
-"backend/apps/*/admin.py" = ["RUF012"]
-"backend/apps/*/views.py" = ["RUF012"]
+"users/models/*.py" = ["RUF012"]
+"users/serializers/*.py" = ["RUF012"]
+"users/admin.py" = ["RUF012"]
+"users/views.py" = ["RUF012"]
+# The harness is a settings module: Django requires these names at module level.
+"tests_harness/settings.py" = ["RUF012", "E501"]
+# pytest's idiom IS bare `assert`, and a test fixture's password is a
+# literal by necessity: there is nothing to leak in a value that exists
+# only inside the suite.
+"users/tests/*.py" = ["S101", "S105", "S106"]
 
 # The settings package chains `from .previous import *` so each module sees the
 # values the earlier ones produced — the standard Django split-settings shape.

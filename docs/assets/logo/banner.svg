@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="User-APP-Template — Django identity and access management app">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b2b26"/>
+      <stop offset="55%" stop-color="#092e20"/>
+      <stop offset="100%" stop-color="#04140f"/>
+    </linearGradient>
+    <linearGradient id="rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#44b78b"/>
+      <stop offset="100%" stop-color="#44b78b" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" fill="url(#bg)"/>
+
+  <!-- Shield: identity and access management, the app's subject. -->
+  <g transform="translate(96 74)" fill="none" stroke="#44b78b" stroke-width="5">
+    <path d="M76 4 L140 30 V84 C140 122 112 146 76 156 C40 146 12 122 12 84 V30 Z" stroke-opacity="0.95"/>
+    <circle cx="76" cy="66" r="20"/>
+    <path d="M44 118 C44 96 58 88 76 88 C94 88 108 96 108 118" stroke-linecap="round"/>
+  </g>
+
+  <g fill="#ffffff" font-family="'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif">
+    <text x="290" y="128" font-size="62" font-weight="700" letter-spacing="-1">User-APP-Template</text>
+    <text x="292" y="176" font-size="26" font-weight="400" fill="#a7d9c4">
+      Identity and access management for Django
+    </text>
+  </g>
+
+  <rect x="292" y="200" width="620" height="3" fill="url(#rule)"/>
+
+  <g font-family="'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace" font-size="19" fill="#7fc4a6">
+    <text x="292" y="240">JWT  ·  TOTP 2FA  ·  step-up auth  ·  encrypted PII  ·  GDPR erasure</text>
+  </g>
+</svg>

@@ -1,5 +1,5 @@
 {
-  "project_name": "User-APP-Template",
+  "project_name": "django-users-app",
   "governance": {
     "framework": ".agents",
     "pinned_version": "v4.2.1",
@@ -8,42 +8,40 @@
     "onboarding_sprint": "000"
   },
   "current_sprint": {
-    "id": "003",
-    "slug": "003-backend-generalization",
+    "id": "004",
+    "slug": "004-app-extraction",
     "status": "CLOSED",
-    "stack": "backend",
-    "layer": "generalization",
-    "last_audit_sprint": 3,
-    "last_audit_date": "2026-07-30",
-    "last_audit_commit_sha": "ec5108c"
+    "stack": "app",
+    "layer": "extraction",
+    "last_audit_sprint": 4,
+    "last_audit_date": "2026-08-01",
+    "last_audit_commit_sha": "4d7f9ef"
   },
-  "active_layer": "generalization",
+  "active_layer": "extraction",
   "active_app": "users",
   "topology_map": [
     ".github/workflows/",
-    "backend/",
-    "backend/apps/core/",
-    "backend/apps/core/tests/",
-    "backend/apps/users/",
-    "backend/apps/users/models/",
-    "backend/apps/users/serializers/",
-    "backend/apps/users/tests/",
-    "backend/config/",
-    "backend/config/settings/",
-    "backend/scripts/",
-    "backend/utils/",
     "docs/architecture/",
+    "docs/assets/logo/",
+    "docs/audits/",
     "docs/contracts/",
     "docs/decisions/",
     "docs/guides/",
     "docs/roadmaps/",
     "docs/sprints/",
-    "docs/walkthroughs/"
+    "docs/sprints/004-app-extraction/",
+    "docs/walkthroughs/",
+    "tests_harness/",
+    "users/",
+    "users/migrations/",
+    "users/models/",
+    "users/serializers/",
+    "users/tests/"
   ],
   "code_containers": [
     {
-      "stack": "backend",
-      "root": "backend/apps/"
+      "stack": "app",
+      "root": "."
     }
   ],
   "adr_autoescalate_triggers": [
@@ -54,27 +52,25 @@
   ],
   "c4_level_3": {
     "mode": "advisory",
-    "reason": "documentation_standard.md 2.1 bootstrap - first run on this project",
-    "computed_at_sprint": "000",
+    "reason": "Single-container repository since Sprint #004: the app is the whole codebase, so ranking containers by density has nothing to rank.",
+    "computed_at_sprint": "004",
     "qualifying_containers": [
       "users"
     ],
     "densities": {
-      "users": 2.89,
-      "core": 1.78
+      "users": 2.89
     },
-    "note": "Stack 'backend' holds 2 containers (<5), so the safety floor selects the single highest-density container."
+    "note": "The 'core' container left this repository with the scaffolding in Sprint #004. Its density figure was removed rather than carried forward as a stale number."
   },
   "stack": {
     "language": "Python 3.13",
-    "framework": "Django 5.x",
+    "framework": "Django 5.2 LTS to 6.0 (verified at both ends)",
     "api": "Django REST Framework",
-    "database": "PostgreSQL 15",
+    "database": "host's choice; the suite runs on in-RAM SQLite",
     "auth": "SimpleJWT + django-axes",
     "linter": "ruff",
-    "type_checker": "mypy (strict)",
     "ci": "GitHub Actions",
-    "test_runner": "pytest + pytest-django (in-RAM SQLite)",
-    "cache": "Redis 7 (shared; LocMem fallback in DEBUG only)"
+    "test_runner": "pytest + pytest-django against tests_harness/",
+    "cache": "host must supply one shared across workers (contract requirement)"
   }
 }

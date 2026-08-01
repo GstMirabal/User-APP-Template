@@ -1,7 +1,7 @@
-# 🧭 System Overview: User-APP-Template
-**Last Audit Sprint**: #003
-**Last Audit Date**: 2026-07-30
-**Last Audit Commit SHA**: ec5108c
+# 🧭 System Overview: django-users-app
+**Last Audit Sprint**: #004
+**Last Audit Date**: 2026-08-01
+**Last Audit Commit SHA**: 0a71a8c
 
 This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` requires every session to read this file before anything else. It is intentionally short — for the full component inventory, see `.agents/docs/architecture/topology_map.md`.
 
@@ -9,49 +9,55 @@ This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` require
 
 ## 1. What this is
 
-**User-APP-Template** is a security-first Identity and Access Management (IAM) engine for Django applications: a reusable backend template providing custom user identity, encrypted PII storage, TOTP two-factor authentication, GDPR anonymization, and brute-force protection.
+**django-users-app** is a reusable Django application for identity and access management: custom user identity, encrypted personal data, TOTP two-factor authentication, GDPR anonymisation and brute-force protection.
 
-This project uses the **Token-Optimized Agent Pipeline (`.agents`)** framework as a git submodule: a governance layer that determines how AI subagents plan, execute, and hand off work here. Governance was adopted in Sprint #000 via the Scenario C (mature project, no prior agents) onboarding route.
+**It is an app, not a project.** Since Sprint #004 this repository holds the `users` package and the tests that prove it, and nothing else — no `manage.py`, no settings module, no compose file. Everything a running system needs comes from the host project that installs it. [`Django-Pro-Template`](https://github.com/GstMirabal/Django-Pro-Template) is the scaffold it is developed and integration-tested against.
+
+This repository uses the **Token-Optimized Agent Pipeline (`.agents`)** framework as a git submodule: a governance layer that determines how AI subagents plan, execute, and hand off work here. Governance was adopted in Sprint #000 via the Scenario C (mature project, no prior agents) onboarding route.
 
 | Aspect | Value |
 | :--- | :--- |
 | **Language / Runtime** | Python 3.13 |
-| **Framework** | Django 5.x + Django REST Framework |
-| **Datastore** | PostgreSQL 15 (Docker, host port `5434`) |
-| **Cache** | Redis 7 (Docker, host port `6381`) — a security dependency, see ADR-0001 |
+| **Framework** | Django 5.2 LTS to 6.0, verified at both ends of the range |
+| **API layer** | Django REST Framework |
+| **Datastore** | The host's choice. The suite runs on in-RAM SQLite. |
+| **Cache** | The host must supply one shared across workers — a security dependency, not an optimisation (ADR-0001) |
 | **Auth** | SimpleJWT (HS256) + `django-axes` + TOTP (`pyotp`) |
-| **API docs** | OAS 3.0 via `drf-spectacular` |
-| **Quality** | `ruff` (lint), `mypy --strict`, `pytest` (in-RAM SQLite) |
-| **CI** | GitHub Actions — lint, system checks, tests, production-settings smoke |
+| **Quality** | `ruff` (lint), `pytest` against `tests_harness/` |
+| **CI** | Calls the reusable workflow published by `Django-Pro-Template` in `app` mode |
 
 ## 2. Architecture at a glance (C4 Level 1-2)
 
-**Level 1 — Context**: this system and who/what it talks to outside its own boundary.
+**Level 1 — Context**: the app, its host, and what it reaches outside that boundary.
 
 ```
-                    +---------------------+
-   API client  ---> |                     | ---> PostgreSQL 15  (identity + encrypted PII)
-   (web / mobile)   |  User-APP-Template  | ---> Redis 7         (TOTP anti-replay, step-up)
-                    |    IAM backend      | ---> HIBP range API  (breach-corpus password check)
-   Django admin --> |                     |
-                    +---------------------+
-                              |
-                              v
-                   Authenticator app (TOTP enrolment via otpauth:// URI)
+              +------------------------------------------+
+              |            HOST PROJECT                  |
+              |   settings · urls · database · cache      |
+              |                                          |
+ API client ->|   +----------------------------------+   |
+ (web/mobile) |   |          users (this app)        |   |--> HIBP range API
+              |   |  identity · 2FA · vault · GDPR   |   |    (breach-corpus check)
+ Django admin |   +----------------------------------+   |
+              +------------------------------------------+
+                        |                    |
+                        v                    v
+              host's database        Authenticator app
+              (identity + ciphertext)  (otpauth:// URI)
 ```
 
-**Level 2 — Container**: the deployable pieces this system is built from.
+Everything outside the inner box is a **host requirement**, specified in [`docs/contracts/USERS_CONTRACT.md`](contracts/USERS_CONTRACT.md). The app does not choose a database, a cache backend or a web server.
+
+**Level 2 — Container**: one container, which is the point.
 
 | Container | Path | Responsibility |
 | :--- | :--- | :--- |
-| **`users`** | `backend/apps/users/` | Identity domain: User/Profile/Secret models, registration, 2FA, anonymization. |
-| **`core`** | `backend/apps/core/` | Cross-cutting primitives: health check, password complexity validator, admin-integrity system check. |
-| **`config`** | `backend/config/` | Django project configuration: settings, root URLConf, WSGI/ASGI. |
-| **`utils`** | `backend/utils/` | Cryptographic helpers: Fernet encryption, HMAC blind indexing. |
-| **`db`** | `docker-compose.yml` | PostgreSQL 15 container, volume `./.docker-db-data`. |
-| **`redis`** | `docker-compose.yml` | Redis 7, no persistence. Holds TOTP anti-replay and step-up grants. |
+| **`users`** | `users/` | The whole app: User/Profile/Secret models, registration, 2FA, encryption, anonymisation. |
+| *(harness)* | `tests_harness/` | Not shipped. A minimal stand-in host so the suite can run without a real project. |
 
-Component-level (Level 3) detail, where required, lives per-module in the relevant `[MODULE]_BLUEPRINT.md` — see `rules/documentation_standard.md §2.1`. For this project, C4 Level 3 runs in **advisory mode** (bootstrap, §2.1 rule 8); the `users` container is the single qualifying container of the `backend` stack (density 2.89 vs `core` 1.78, safety floor applied with 2 containers).
+The `core`, `config`, `utils`, `db` and `redis` containers listed here before Sprint #004 left with the scaffolding. `core` and `config` are documented in `Django-Pro-Template` from its own code; `utils/encryption.py` moved inside this app as `users/encryption.py`, being identity logic rather than shared plumbing.
+
+C4 Level 3 runs in **advisory mode**: with a single container there is nothing to rank by density. Component detail lives in [`USERS_BLUEPRINT.md`](architecture/USERS_BLUEPRINT.md).
 
 ## 3. The governance hierarchy
 
@@ -84,9 +90,8 @@ Run `/agents:start`. It will:
 | Document | Type | Covers |
 | :--- | :--- | :--- |
 | `docs/architecture/USERS_BLUEPRINT.md` | Reference | Identity domain (models, endpoints, crypto, anonymization). |
-| `docs/architecture/CORE_BLUEPRINT.md` | Reference | Health check and password complexity validator. |
-| `docs/architecture/CONFIG_BLUEPRINT.md` | Reference | Settings, security headers, JWT/Axes/throttling, routing. |
-| `docs/walkthroughs/*_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
+| `docs/contracts/USERS_CONTRACT.md` | Reference | The REST surface and what a host must provide. |
+| `docs/walkthroughs/USERS_WALKTHROUGH.md` | Historical | What works today, verified how, and known tech debt. |
 | `docs/roadmaps/GLOBAL_ROADMAP.md` | Future | Prioritized remediation and feature backlog. |
 | `docs/sprints/000-backend-identity/` | History | The Scenario C onboarding audit record. |
 | `docs/sprints/001-backend-verification/` | History | Repair of five blocking defects; test harness and CI restored. |

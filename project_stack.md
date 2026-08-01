@@ -1,4 +1,4 @@
-# Project Stack: User-APP-Template
+# Project Stack: django-users-app
 
 ## Core Technology
 - **Language:** Python 3.13+

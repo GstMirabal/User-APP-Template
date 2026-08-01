@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to User-APP-Template. This file is the **Master Ledger** (agents.md §0): every Sprint Closeout appends its sprint entry under `[Unreleased]`; every deployment seals that section as `[vX.Y.Z] - date` immediately before tagging.
+All notable changes to django-users-app. This file is the **Master Ledger** (agents.md §0): every Sprint Closeout appends its sprint entry under `[Unreleased]`; every deployment seals that section as `[vX.Y.Z] - date` immediately before tagging.
 
 Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](https://semver.org/).
 
@@ -8,7 +8,66 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
-_Nothing yet._
+### Sprint #004 — App / Extraction
+
+**This repository is no longer a Django project.** It is the `users`
+application, installed into a host. There is no `manage.py`, no settings module
+and no compose file, and no migration path from `v1.0.0` — a project and an app
+are different artefacts, not two versions of one.
+
+Renamed to `django-users-app`. GitHub redirects the old paths.
+
+#### Added
+- `verification_code_issued` signal, so a host delivers verification codes by
+  whatever channel it uses.
+- System checks `users.W001` (nothing listening for that signal) and
+  `users.W002` (`AXES_USERNAME_FORM_FIELD` left at the axes 8 default).
+- `users/throttling.py`: the app supplies its own `sensitive` rate; a host that
+  declares one still overrides it.
+- `users/defaults.py`: app-level fallbacks for `STEP_UP_WINDOW_SECONDS`,
+  `VERIFICATION_OTP_TTL_MINUTES` and `TWO_FACTOR_ISSUER_NAME`.
+- `docs/contracts/USERS_CONTRACT.md`, referenced by the blueprint since Sprint
+  #000 and never written.
+- `docs/audits/AUDIT_004_USERS_APP.md`: sixteen findings, all closed.
+- `tests_harness/`, a minimal stand-in host; `.github/dependabot.yml`.
+
+#### Fixed
+- **No account created through the API could be verified.** `register()`
+  discarded the plaintext code, nothing delivered it, and the stored column is
+  never read back — while the response said to check your email.
+- **Every throttled endpoint returned `500`** in a host that had not declared
+  the `sensitive` rate. Invisible to the suite, which runs against a harness
+  that declares it.
+- `AXES_USERNAME_FORM_FIELD` pinned. From axes 8 the default derives from
+  `USERNAME_FIELD`, so failed logins through Django's own form were recorded
+  against nobody and lockout degraded from per-account to per-IP, silently.
+- `language_code` reached the profile instead of being accepted, documented and
+  dropped behind a `201`.
+- `anonymize()` clears `registration_data` and `last_activity_at`, which
+  survived an operation whose stated purpose is erasing them.
+- The TOTP token is no longer written to the log on replay detection; user
+  emails are out of log records entirely.
+- `use_in_migrations` dropped from a manager that hides soft-deleted rows
+  (migration `0009`); `except Exception: raise e` now logs before re-raising.
+- Test keys are generated per run rather than committed. They were never live,
+  but this is the file the README tells a consumer to copy.
+
+#### Changed
+- Dependency floors state what the suite was executed against **and** what is
+  clear of published advisories. `Django>=5.2` had admitted 5.2.7 and its
+  critical SQL injection. `django-axes` floored at 8.3, skipping 7.x so the
+  security requirement is not conditional on a version the host picks.
+- CI calls `Django-Pro-Template`'s reusable workflow in `app` mode.
+- `ruff` selects `S` and `G`. Their absence from an identity application was
+  itself an audit finding.
+- ADR-0003 marked superseded; its reasoning moved to the contract.
+
+#### Removed
+- All project scaffolding: `backend/config/`, `backend/apps/core/`,
+  `manage.py`, `docker-compose.yml`, `Makefile`, `config.toml.example`.
+- `CORE_BLUEPRINT.md`, `CONFIG_BLUEPRINT.md` and both walkthroughs — they
+  documented code this repository no longer contains, and
+  `Django-Pro-Template` documents the same scaffolding from its own.
 
 ## [1.0.0] - 2026-07-30
 

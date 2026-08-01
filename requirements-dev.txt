@@ -1,9 +1,9 @@
-# Development and test tooling. Installs the runtime set first, so a
-# single `pip install -r requirements-dev.txt` gives a working checkout.
+# Development and test tooling. Installs the runtime set first, so a single
+# `pip install -r requirements-dev.txt` gives a working checkout.
 -r requirements.txt
 
-factory-boy==3.3.3
-pytest-cov==6.0.0
-pytest-django==4.10.0
-pytest==8.3.4
-ruff==0.15.8
+pytest>=9.0.3
+pytest-django>=4.10
+pytest-cov>=6.0
+factory-boy>=3.3
+ruff>=0.15

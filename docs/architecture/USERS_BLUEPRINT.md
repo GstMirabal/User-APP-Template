@@ -12,7 +12,7 @@ arc42-lite (`rules/documentation_standard.md §5`) — Reference only. This docu
 
 ## 1. Introduction & Goals
 
-The `users` module is the identity domain of User-APP-Template. It owns the custom `User` model (UUID primary key, email as login field), two satellite models auto-created by signal (`UserProfile` for preferences and legal consent, `UserSecret` for encrypted PII and credentials), and the REST surface for registration, self-service profile management, TOTP two-factor enrolment, step-up re-authentication, and GDPR anonymization. It also owns the soft-delete and audit manager layer that keeps deleted records queryable without exposing them to normal reads.
+The `users` module is the identity domain of django-users-app. It owns the custom `User` model (UUID primary key, email as login field), two satellite models auto-created by signal (`UserProfile` for preferences and legal consent, `UserSecret` for encrypted PII and credentials), and the REST surface for registration, self-service profile management, TOTP two-factor enrolment, step-up re-authentication, and GDPR anonymization. It also owns the soft-delete and audit manager layer that keeps deleted records queryable without exposing them to normal reads.
 
 ## 2. Context & Scope
 
