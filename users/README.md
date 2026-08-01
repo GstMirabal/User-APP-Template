@@ -19,6 +19,8 @@ copy, the full documentation lives at
 | `step_up.py` | Re-authentication grants, held in the cache and the session |
 | `permissions.py` | `IsVerified` and `RequiresStepUp` |
 | `defaults.py` | Settings this app reads, and the fallbacks it applies |
+| `events.py` | Signals the app emits for a host to act on |
+| `checks.py` | Startup checks for host configuration the app cannot supply |
 
 ## Installing it
 
@@ -37,9 +39,14 @@ urlpatterns = [path("api/v1/users/", include("users.urls"))]
 > app goes into a **new** project. It cannot be added to one that already has
 > auth data.
 
-Four things must come from the host — `MASTER_KEY`, `ENCRYPTION_PEPPER`, a cache
-shared across workers, and `AXES_USERNAME_FORM_FIELD = "username"`. Each is
-explained, with the reason it cannot be defaulted, in
+Five things must come from the host: `MASTER_KEY`, `ENCRYPTION_PEPPER`, a cache
+shared across workers, `AXES_USERNAME_FORM_FIELD = "username"`, and a receiver
+for `verification_code_issued`. The last two report as `users.W002` and
+`users.W001` under `manage.py check`, because neither raises on its own —
+missing them costs you per-account lockout and account verification
+respectively, in silence.
+
+Each is explained, with the reason it cannot be defaulted, in
 [`USERS_CONTRACT.md`](../docs/contracts/USERS_CONTRACT.md).
 
 ## What the vault stores

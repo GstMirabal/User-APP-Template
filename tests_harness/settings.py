@@ -136,3 +136,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Deliberately NOT set: STEP_UP_WINDOW_SECONDS and VERIFICATION_OTP_TTL_MINUTES.
 # The app must work on its own defaults when a host does not declare them, and
 # the suite passing here is what proves it.
+#
+# Deliberately NOT connected: a receiver for `verification_code_issued`. This
+# harness stands in for a host that has done the minimum, so `manage.py check`
+# reports `users.W001` here — which is the check doing its job, not a defect.
+# The tests that need the code connect their own receiver and disconnect it
+# afterwards, the way a real project would wire delivery.

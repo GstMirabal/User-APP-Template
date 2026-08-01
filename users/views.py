@@ -117,13 +117,13 @@ class UserViewSet(GenericViewSet):
         # Trigger mock verification flow
         VerificationService.initialize_verification_flow(user)
 
-        logger.info(f"User {user.email} successfully completed registration.")
+        logger.info("Registration completed for user %s", user.pk)
 
         return Response(
             {
                 "detail": (
-                    "User registered successfully. Please check your email "
-                    "(MOCK LOG) to verify your account."
+                    "Account created. A verification code has been issued; "
+                    "follow the instructions sent to your registered address."
                 ),
                 "user_id": user.id,
                 "email": user.email,
@@ -282,7 +282,7 @@ class UserViewSet(GenericViewSet):
             )
 
         logger.warning(
-            f"User {user.email} initialized irreversable anonymize sequence."
+            "Irreversible anonymisation started for user %s", user.pk
         )
 
         # Extract the user into a specific single-object QuerySet

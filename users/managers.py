@@ -80,9 +80,12 @@ class SoftDeleteQuerySet(models.QuerySet):
                 if user.is_anonymized:
                     continue
 
-                # 1. Technical Identity
+                # 1. Technical Identity. `.invalid` is reserved by RFC 2606
+                # precisely so it can never resolve, and it does not stamp this
+                # app's name onto a host's permanent records — the domain
+                # written here outlives the row.
                 anon_id: str = f"anon_{user.id}"
-                anon_email: str = f"{anon_id}@user-app-template.internal"
+                anon_email: str = f"{anon_id}@anonymized.invalid"
 
                 user.is_anonymized = True
                 user.email = anon_email
@@ -91,12 +94,19 @@ class SoftDeleteQuerySet(models.QuerySet):
                 user.last_name = "User"
                 user.set_unusable_password()
 
-                # 2. UserProfile cleanup
+                # 2. UserProfile cleanup. `registration_data` is a free-form
+                # JSONField a host is invited to fill (the post_save receiver
+                # reads `_registration_metadata` for exactly that), so leaving
+                # it would let arbitrary personal data survive an operation
+                # whose entire purpose is erasing it. `last_activity_at` goes
+                # too: a behavioural timestamp is still data about a person.
                 if hasattr(user, "profile"):
                     profile = user.profile
                     profile.bio = "Anonymized Data"
                     profile.avatar = None
                     profile.marketing_consent = False
+                    profile.registration_data = {}
+                    profile.last_activity_at = None
                     profile.save()
 
                 # 3. UserSecret cleanup
@@ -124,14 +134,44 @@ class SoftDeleteQuerySet(models.QuerySet):
 
 
 class CustomUserManager(BaseUserManager.from_queryset(SoftDeleteQuerySet)):
-    """Custom user manager supporting email login and soft deletion."""
+    """Custom user manager supporting email login and soft deletion.
 
-    use_in_migrations = True
+    `get_queryset()` hides soft-deleted rows, so this manager deliberately does
+    NOT set `use_in_migrations`. It did until Sprint #004, which meant a data
+    migration reaching for `User.objects` silently skipped every deleted row —
+    a filtered manager and migration use are a pairing Django's documentation
+    warns against. Migrations that need every row use `audit_objects`.
+    """
 
     def _create_user(
-        self, email: str, username: str, password: str | None, **extra_fields: Any
+        self,
+        email: str,
+        username: str,
+        password: str | None,
+        registration_metadata: dict[str, Any] | None = None,
+        **extra_fields: Any,
     ) -> Any:
-        """Internal method to create and save a user. Satellite models are handled by signals."""
+        """Internal method to create and save a user.
+
+        Satellite models are provisioned by the `post_save` receiver, which
+        reads `_registration_metadata` off the instance. That attribute has to
+        be set before `save()`, so it is accepted here rather than left to a
+        caller that never gets to touch the instance in between.
+
+        Args:
+            email (str): Login identifier; normalised and lowercased.
+            username (str): Display identifier.
+            password (str | None): Raw password, or None for an unusable one.
+            registration_metadata (dict[str, Any] | None): Context stored on
+                the new profile, such as the caller's language preference.
+            **extra_fields (Any): Further model fields.
+
+        Returns:
+            Any: The created user instance.
+
+        Raises:
+            ValueError: If email or username is empty.
+        """
         if not email:
             raise ValueError("The email must be set")
         if not username:
@@ -141,6 +181,7 @@ class CustomUserManager(BaseUserManager.from_queryset(SoftDeleteQuerySet)):
 
         with transaction.atomic():
             user = self.model(email=email, username=username, **extra_fields)
+            user._registration_metadata = registration_metadata or {}
             user.set_password(password)
             user.save(using=self._db)
             return user
@@ -150,12 +191,27 @@ class CustomUserManager(BaseUserManager.from_queryset(SoftDeleteQuerySet)):
         email: str,
         username: str,
         password: str | None = None,
+        registration_metadata: dict[str, Any] | None = None,
         **extra_fields: Any,
     ) -> Any:
-        """Creates a standard user."""
+        """Creates a standard user.
+
+        Args:
+            email (str): Login identifier.
+            username (str): Display identifier.
+            password (str | None): Raw password.
+            registration_metadata (dict[str, Any] | None): Context stored on
+                the new profile.
+            **extra_fields (Any): Further model fields.
+
+        Returns:
+            Any: The created user instance.
+        """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
-        return self._create_user(email, username, password, **extra_fields)
+        return self._create_user(
+            email, username, password, registration_metadata, **extra_fields
+        )
 
     def create_superuser(
         self,

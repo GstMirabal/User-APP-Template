@@ -50,13 +50,32 @@ Backlog derived from the Sprint #000 reverse-engineering audit and extended by f
 
 **No P0 items remain open.**
 
-## P1 — Structural debt (Sprint #004)
+### Sprint #004 — extraction and audit
+
+| # | Item |
+| :--- | :--- |
+| F-001 | Verification codes announced via `verification_code_issued`; a host with no receiver is told so by `users.W001` |
+| F-002 | The `users` logger documented as a host concern, with the records lost without it |
+| F-003 | `(MOCK LOG)` removed from the registration response |
+| F-004 | `language_code` reaches the profile instead of being discarded |
+| F-005 | `anonymize()` clears `registration_data` and `last_activity_at` |
+| F-006 | The TOTP token no longer written to the log |
+| F-007 | Emails out of log records; `G` rules enforce it mechanically |
+| F-008 | `restore()` documented as reachable only through `audit_objects` |
+| F-009 | The empty `except` now logs before re-raising |
+| F-010 | `use_in_migrations` dropped from the filtering manager (migration `0009`) |
+| F-011..F-014 | Anonymised domain, linter rule sets, type annotation, docstrings |
+| — | `AXES_USERNAME_FORM_FIELD` pinned, `users.W002` added; app extracted; repository renamed |
+
+**No blocking items remain open.**
+
+## P1 — Structural debt (Sprint #005)
 
 | # | Item | Module |
 | :--- | :--- | :--- |
 | P1-8 | Author the retroactive ADRs still listed in the Blueprint §7 (encryption strategy, GDPR anonymization, email-as-username). | `users` |
 | P1-9 | Verification-code resend endpoint with its own rate limiting. Expiry now exists, so an expired code currently needs administrator re-issue. | `users` |
-| P1-11 | **No key rotation path.** `get_fernet()` builds a plain `Fernet(MASTER_KEY)` and `generate_blind_index()` reads a single `ENCRYPTION_PEPPER`, so changing either makes every stored secret undecryptable and every blind index unsearchable, with no supported migration. `MultiFernet` accepts a key list and decrypts under any of them while encrypting under the first, which is the mechanism a rotation would need. Verified by reading `users/encryption.py`; documented as a warning in the contract meanwhile. | `users` |
+| P1-11 | **No key rotation path.** (raised by AUDIT_004) `get_fernet()` builds a plain `Fernet(MASTER_KEY)` and `generate_blind_index()` reads a single `ENCRYPTION_PEPPER`, so changing either makes every stored secret undecryptable and every blind index unsearchable, with no supported migration. `MultiFernet` accepts a key list and decrypts under any of them while encrypting under the first, which is the mechanism a rotation would need. Verified by reading `users/encryption.py`; documented as a warning in the contract meanwhile. | `users` |
 
 ## P2 — Hygiene
 

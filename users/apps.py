@@ -13,6 +13,8 @@ class UsersConfig(AppConfig):
     def ready(self) -> None:
         """Executed when the application is ready.
 
-        Imports and registers signals to ensure they are active.
+        Imports the receivers this app connects, and the system checks that
+        verify what a host has to supply for the app to behave as documented.
         """
+        import users.checks
         import users.signals  # noqa: F401

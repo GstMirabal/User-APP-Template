@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from django.contrib.auth import get_user_model
@@ -12,7 +13,11 @@ from .models import UserProfile, UserSecret
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractUser
 
-User: AbstractUser = get_user_model()
+logger = logging.getLogger(__name__)
+
+# `get_user_model()` returns the model *class*, not an instance. The annotation
+# read `AbstractUser` until Sprint #004 and was simply false.
+User: type[AbstractUser] = get_user_model()
 
 
 @receiver(post_save, sender=User)
@@ -22,19 +27,24 @@ def create_user_profile_and_secrets(
     created: bool,
     **kwargs: Any,
 ) -> None:
-    """Post-save signal to automatically create UserProfile and UserSecret.
+    """Provisions the profile and secret vault for a newly created user.
 
-    Executed after a User instance is saved. If 'created' is True, it atomicallly
-    initializes the satellite models and schedules post-transaction tasks.
+    Runs atomically: an account without its satellite rows would fail on the
+    first request that touches `user.profile` or `user.secrets`, so a failure
+    here rolls the user creation back rather than leaving a half-built account.
+
+    `_registration_metadata` is read off the instance because a `post_save`
+    receiver has no other way to see data that is not a model field. The
+    manager sets it before saving.
 
     Args:
-        sender (Type[AbstractUser]): The User model class.
+        sender (type[AbstractUser]): The User model class.
         instance (AbstractUser): The created user instance.
         created (bool): Flag indicating if this is a new record.
         **kwargs (Any): Additional signal keywords.
 
     Raises:
-        Exception: If satellite creation fails, triggering an atomic rollback.
+        Exception: Re-raised after logging, so the transaction rolls back.
     """
     if created:
         try:
@@ -59,6 +69,15 @@ def create_user_profile_and_secrets(
                 # 2. Create UserSecret (Empty vault)
                 UserSecret.objects.create(user=instance)
 
-        except Exception as e:
-            # Atomic rollback is automatic, but we re-raise for awareness.
-            raise e
+        except Exception:
+            # The rollback takes the user row with it, so without this record
+            # the only trace is a registration that returned an error and left
+            # nothing behind. `agents.md §1` requires the log, and catching
+            # only to re-raise — as this did until Sprint #004 — satisfied
+            # neither the rule nor a reader.
+            logger.exception(
+                "Failed to provision profile and secret vault for user %s; "
+                "rolling back the account creation",
+                instance.pk,
+            )
+            raise

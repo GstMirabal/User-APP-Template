@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from .defaults import two_factor_issuer_name, verification_otp_ttl_minutes
+from .events import verification_code_issued
 
 if TYPE_CHECKING:
     from .models.user import User
@@ -54,11 +55,17 @@ class VerificationService:
         borrowed a credential column and wrote there in plaintext, destroying
         whatever the user had stored.
 
+        Delivery belongs to the host: `verification_code_issued` is sent with
+        the plaintext, and a project connects whatever channel it uses. Nothing
+        here sends mail. The stored column is never read back, so that signal
+        and this return value are the only readable copies that exist.
+
         Args:
             user (User): The user being verified.
 
         Returns:
-            str: The plaintext code, for the caller to deliver out of band.
+            str: The plaintext code, for a direct caller that prefers not to
+                use the signal.
         """
         otp = VerificationService.generate_otp()
         expires_at = timezone.now() + timedelta(
@@ -74,6 +81,15 @@ class VerificationService:
         # The code itself is never logged: it is a live credential, and
         # application logs are shipped off-host.
         logger.debug("Verification code issued for user %s", user.pk)
+
+        # Announced rather than delivered. This app does not know how a given
+        # project reaches its users, and the stored column is encrypted and
+        # never read back, so this signal carries the only readable copy that
+        # will ever exist. A project with no receiver connected is warned by
+        # the `users.W001` system check.
+        verification_code_issued.send(
+            sender=type(user), user=user, code=otp, expires_at=expires_at
+        )
         return otp
 
     @staticmethod
@@ -175,7 +191,7 @@ class VerificationService:
         cache_key = f"totp_used_{user.id}_{token}"
         if cache.get(cache_key):
             logger.warning(
-                "Replay attack detected for user %s with token %s", user.id, token
+                "TOTP replay attempt for user %s", user.id
             )
             return False
 

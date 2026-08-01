@@ -44,6 +44,8 @@ Creates an account and issues a verification code.
 
 Creating a user also provisions its `UserProfile` and `UserSecret` atomically, via a `post_save` receiver. A failure there rolls the user creation back.
 
+The verification code is **announced, not delivered**: `verification_code_issued` fires with the plaintext, and the host sends it. See *Host requirements* below.
+
 ## `POST verify/`
 
 Consumes a verification code.
@@ -164,7 +166,7 @@ Irreversibly anonymises the account.
 
 | Status | Meaning |
 | :--- | :--- |
-| `200` | Identity rewritten, every encrypted column nulled, row soft-deleted. |
+| `200` | Identity rewritten, every encrypted column nulled, profile metadata cleared, row soft-deleted. |
 | `403` | Confirmation string did not match, or no valid step-up. |
 
 **This cannot be undone.** `restore()` explicitly refuses anonymised rows.
@@ -182,6 +184,56 @@ The app is not self-contained. A host project must provide:
 | **A cache shared across workers** | TOTP anti-replay and step-up grants. On a per-process backend both silently fail under more than one worker — the request lands on a worker that never saw the earlier state. |
 | `users.urls` included | Nothing is routed otherwise. |
 | `AXES_USERNAME_FORM_FIELD = "username"` | This app logs in by email, and `django-axes` 8 defaults this to the model's `USERNAME_FIELD`. Django's own login form (`/admin/login/`, `LoginView`) names its field `username` regardless, so axes finds no matching key and stores every failed attempt as `username=None` — lockout degrades from per-account to per-IP and `AXES_RESET_ON_SUCCESS` stops matching. No exception is raised. |
+| **A receiver for `verification_code_issued`** | The app issues verification codes and does not deliver them. Without a receiver, registration succeeds and the account can never be verified: the stored column is encrypted and never read back, so the signal carries the only readable copy. |
+
+Both of the last two are checked at startup — `manage.py check` reports `users.W001` and `users.W002` — because neither raises an exception on its own.
+
+### Logging
+
+The app writes to loggers named after its modules (`users.views`, `users.services`, and so on) and configures nothing. Under Django's defaults those records reach no handler, so a host that registers neither a `users` logger nor a root handler discards all of the following:
+
+| Record | Level | Meaning |
+| :--- | :--- | :--- |
+| Decryption failed — possible `MASTER_KEY` mismatch | `critical` | Stored personal data has become unreadable. The single most important alarm this app raises. |
+| TOTP replay attempt | `warning` | A one-time code was presented twice — an active attack indicator. |
+| Failed step-up re-authentication | `warning` | Password guessing against an authenticated session. |
+| Irreversible anonymisation started | `warning` | The audit trail for an action that cannot be undone. |
+| Invalid or expired verification code | `warning` / `info` | Registration-flow abuse. |
+
+```python
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"users": {"handlers": ["console"], "level": "INFO"}},
+}
+```
+
+This is not enforced by a system check. A host may route these through the root logger instead, and a warning that fires on a correct configuration teaches people to ignore warnings.
+
+### Delivering the verification code
+
+```python
+from django.core.mail import send_mail
+from django.dispatch import receiver
+
+from users.events import verification_code_issued
+
+
+@receiver(verification_code_issued)
+def deliver_verification_code(sender, user, code, expires_at, **kwargs):
+    send_mail(
+        subject="Verify your account",
+        message=f"Your code is {code}. It expires at {expires_at:%H:%M UTC}.",
+        from_email=None,
+        recipient_list=[user.email],
+    )
+```
+
+Email is one option. The signal exists because this app cannot know whether a
+given project reaches its users by mail, SMS, push or a provider API, and
+picking one would impose a template, a subject line and a set of `EMAIL_*`
+settings on every consumer.
 
 Optional, with defaults: `STEP_UP_WINDOW_SECONDS` (300), `VERIFICATION_OTP_TTL_MINUTES` (15).
 

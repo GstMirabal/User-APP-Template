@@ -21,22 +21,39 @@ and the probe output is quoted where it is the evidence.
 
 ## 2. Findings
 
-| # | Finding | Severity |
-| :--- | :--- | :--- |
-| **F-001** | A registered account can never be verified | **Blocking** |
-| **F-002** | Security events reach no handler | **High** |
-| **F-003** | `(MOCK LOG)` shipped in a user-facing API response | **High** |
-| F-004 | `language_code` is accepted, documented and silently discarded | Medium |
-| F-005 | `anonymize()` leaves `registration_data` and `last_activity_at` intact | Medium |
-| F-006 | The TOTP token is written to the log on replay detection | Medium |
-| F-007 | Three log calls interpolate the user's email with an f-string | Medium |
-| F-008 | `restore()` is unreachable through the default manager | Medium |
-| F-009 | `except Exception: raise e` handles nothing and logs nothing | Medium |
-| F-010 | `use_in_migrations = True` on a manager that hides rows | Medium |
-| F-011 | The anonymised-email domain hardcodes the old repository name | Low |
-| F-012 | `ruff` selects neither security nor logging rule sets | Low |
-| F-013 | `User: AbstractUser = get_user_model()` annotates a class as an instance | Low |
-| F-014 | Two docstrings describe behaviour that was deleted, plus two typos | Low |
+All fourteen are closed. Each behavioural fix carries a regression test that
+was **run against the unfixed code and observed to fail**, not merely to pass
+once repaired.
+
+| # | Finding | Severity | Resolution |
+| :--- | :--- | :--- | :--- |
+| **F-001** | A registered account can never be verified | **Blocking** | `verification_code_issued` signal + `users.W001` check |
+| **F-002** | Security events reach no handler | **High** | Stated as a host requirement; see §2a |
+| **F-003** | `(MOCK LOG)` shipped in a user-facing API response | **High** | Message rewritten |
+| F-004 | `language_code` is accepted, documented and silently discarded | Medium | Passed through `create_user(registration_metadata=...)` |
+| F-005 | `anonymize()` leaves `registration_data` and `last_activity_at` intact | Medium | Both cleared |
+| F-006 | The TOTP token is written to the log on replay detection | Medium | Token dropped from the record |
+| F-007 | Three log calls interpolate the user's email with an f-string | Medium | `%s` with `user.pk`; `G` rules now enforce it |
+| F-008 | `restore()` is unreachable through the default manager | Medium | Documented; `audit_objects` is the entry point |
+| F-009 | `except Exception: raise e` handles nothing and logs nothing | Medium | `logger.exception` then bare `raise` |
+| F-010 | `use_in_migrations = True` on a manager that hides rows | Medium | Removed, with migration `0009` |
+| F-011 | The anonymised-email domain hardcodes the old repository name | Low | `@anonymized.invalid` (RFC 2606) |
+| F-012 | `ruff` selects neither security nor logging rule sets | Low | `S` and `G` added |
+| F-013 | `User: AbstractUser = get_user_model()` annotates a class as an instance | Low | `type[AbstractUser]` |
+| F-014 | Two docstrings describe behaviour that was deleted, plus two typos | Low | Rewritten |
+
+### 2a · Why F-002 is documented rather than fixed
+
+An app cannot configure its host's logging, and an app that tried — by calling
+`logging.config` at import, or shipping a `LOGGING` fragment — would be
+overriding a decision that belongs to the project installing it.
+
+What was missing was not a handler but a statement. The contract now names the
+`users` logger as a host concern and lists the records lost without it,
+starting with the `critical` decryption failure. The check that would enforce
+it does not exist, because a host may legitimately route those records through
+the root logger, and a warning that fires on a correct configuration teaches
+people to ignore warnings.
 
 ---
 

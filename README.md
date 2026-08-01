@@ -140,7 +140,7 @@ urlpatterns = [
 
 ### 3. Provide what it needs
 
-Four requirements, listed in full under *Host requirements* in the
+Five requirements, listed in full under *Host requirements* in the
 [contract](docs/contracts/USERS_CONTRACT.md):
 
 | Setting | Why |
@@ -149,6 +149,7 @@ Four requirements, listed in full under *Host requirements* in the
 | `ENCRYPTION_PEPPER` | Keys the blind indexes that keep encrypted fields searchable. |
 | A cache **shared across workers** | TOTP anti-replay and step-up grants. On a per-process backend both fail silently under more than one worker. |
 | `AXES_USERNAME_FORM_FIELD = "username"` | This app logs in by email; without this, `django-axes` records failed logins against nobody and lockout degrades from per-account to per-IP. |
+| A receiver for `verification_code_issued` | The app issues verification codes and does not send them. Without a receiver, an account can never be verified. |
 
 The contract also lists the commands that generate the two keys, and what
 rotating them costs.
@@ -170,7 +171,7 @@ database or cache service is needed.
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements-dev.txt
 
-pytest -q          # 51 tests, in-RAM SQLite
+pytest -q          # 60 tests, in-RAM SQLite
 ruff check .
 ```
 
