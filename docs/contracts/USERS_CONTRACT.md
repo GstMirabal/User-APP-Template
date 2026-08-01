@@ -185,6 +185,24 @@ The app is not self-contained. A host project must provide:
 | `users.urls` included | Nothing is routed otherwise. |
 | `AXES_USERNAME_FORM_FIELD = "username"` | This app logs in by email, and `django-axes` 8 defaults this to the model's `USERNAME_FIELD`. Django's own login form (`/admin/login/`, `LoginView`) names its field `username` regardless, so axes finds no matching key and stores every failed attempt as `username=None` — lockout degrades from per-account to per-IP and `AXES_RESET_ON_SUCCESS` stops matching. No exception is raised. |
 | **A receiver for `verification_code_issued`** | The app issues verification codes and does not deliver them. Without a receiver, registration succeeds and the account can never be verified: the stored column is encrypted and never read back, so the signal carries the only readable copy. |
+| `REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]` including `JWTAuthentication` | DRF's own default is session and basic authentication. A bearer token is simply not recognised without it, so every authenticated endpoint answers a token client `403` — including `me/reauth/`, which makes the step-up gated endpoints unreachable for exactly the clients ADR-0002 exists to serve. |
+
+```python
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
+```
+
+The `sensitive` throttle rate is **not** on this list. The app supplies its own
+default of 5 requests a minute, and a host that sets
+`DEFAULT_THROTTLE_RATES["sensitive"]` overrides it. That was a host requirement
+until Sprint #004, when vendoring the app into a real project returned `500`
+from registration, verification and re-authentication: DRF's `ScopedRateThrottle`
+raises `ImproperlyConfigured` for an unknown scope, and a reusable app should
+not fail that way because a host has not read a table.
 
 Both of the last two are checked at startup — `manage.py check` reports `users.W001` and `users.W002` — because neither raises an exception on its own.
 

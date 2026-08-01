@@ -5,6 +5,8 @@ only to pass after it. A test that only does the second proves nothing: it is
 consistent with the defect never having existed.
 """
 
+from unittest.mock import patch
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -12,6 +14,7 @@ from django.core.checks import run_checks
 from django.dispatch import receiver
 from django.test import Client, override_settings
 
+from users.checks import check_verification_delivery_is_wired
 from users.events import verification_code_issued
 
 from .factories import VerifiedUserFactory
@@ -99,12 +102,21 @@ def test_f001_the_announced_code_is_the_one_verify_accepts() -> None:
 
 
 def test_f001_a_host_with_no_receiver_is_warned() -> None:
-    """Silence is the failure mode, so it needs a check rather than a comment."""
-    ids = {message.id for message in run_checks()}
-    assert "users.W001" in ids, (
-        "a project that connects no receiver issues codes that reach nobody, "
-        "and nothing told it so"
-    )
+    """Silence is the failure mode, so it needs a check rather than a comment.
+
+    Written against the check's own logic rather than the ambient state. The
+    first version read `run_checks()` and asserted `users.W001` was present,
+    which passed in the harness and failed the moment the app was vendored into
+    a host that had correctly wired delivery — it was asserting a property of
+    the environment, not of the code.
+    """
+    with patch.object(verification_code_issued, "has_listeners", return_value=False):
+        assert [m.id for m in check_verification_delivery_is_wired(None)] == [
+            "users.W001"
+        ]
+
+    with patch.object(verification_code_issued, "has_listeners", return_value=True):
+        assert check_verification_delivery_is_wired(None) == []
 
 
 @override_settings(AXES_USERNAME_FORM_FIELD="email")
@@ -112,6 +124,21 @@ def test_f002_axes_misconfiguration_is_warned() -> None:
     """Lockout degrading to per-IP raises nothing, so it needs a check too."""
     ids = {message.id for message in run_checks()}
     assert "users.W002" in ids
+
+
+@override_settings(REST_FRAMEWORK={})
+@pytest.mark.django_db
+def test_throttled_endpoints_work_without_the_host_declaring_a_rate() -> None:
+    """A host that declares no `sensitive` rate must not get a 500.
+
+    `ScopedRateThrottle` raises `ImproperlyConfigured` when its scope is
+    missing, so registration, verification and re-authentication all returned
+    `500` in a real host while this suite stayed green — the harness happened
+    to declare the rate, which is exactly the blind spot a test harness
+    creates.
+    """
+    response = _register(Client())
+    assert response.status_code == 201, response.content
 
 
 @pytest.mark.django_db

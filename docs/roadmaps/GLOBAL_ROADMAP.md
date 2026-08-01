@@ -1,7 +1,7 @@
 # 🗺️ Global Roadmap: django-users-app
 **Last Audit Sprint**: #004
 **Last Audit Date**: 2026-08-01
-**Last Audit Commit SHA**: 0a71a8c
+**Last Audit Commit SHA**: 5de70f1
 
 ---
 
@@ -65,6 +65,8 @@ Backlog derived from the Sprint #000 reverse-engineering audit and extended by f
 | F-009 | The empty `except` now logs before re-raising |
 | F-010 | `use_in_migrations` dropped from the filtering manager (migration `0009`) |
 | F-011..F-014 | Anonymised domain, linter rule sets, type annotation, docstrings |
+| F-015 | The app supplies the `sensitive` throttle rate; without it every throttled endpoint returned `500` in a real host |
+| F-016 | `JWTAuthentication` documented as a host requirement — bearer clients got `403` without it |
 | — | `AXES_USERNAME_FORM_FIELD` pinned, `users.W002` added; app extracted; repository renamed |
 
 **No blocking items remain open.**

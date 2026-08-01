@@ -8,7 +8,6 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import GenericViewSet
 
 from . import step_up
@@ -21,6 +20,7 @@ from .serializers import (
     UserSerializer,
 )
 from .services import VerificationService
+from .throttling import SensitiveScopedRateThrottle
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -35,7 +35,7 @@ class UserViewSet(GenericViewSet):
         """Override to apply sensitive throttling for specific actions."""
         if self.action in ["register", "verify", "reauth"]:
             self.throttle_scope = "sensitive"
-            return [ScopedRateThrottle()]
+            return [SensitiveScopedRateThrottle()]
         return super().get_throttles()
 
     def get_permissions(self):

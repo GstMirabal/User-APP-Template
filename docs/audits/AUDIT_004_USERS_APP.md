@@ -13,15 +13,14 @@
 
 Sprints #001 to #003 fixed a great deal, but each chased a defect it already
 knew about. Nothing had ever swept `managers.py`, `signals.py` or `serializers/`
-systematically. Those three modules hold six of the fourteen findings below,
-including the two most serious.
+systematically. Those three modules hold six of the sixteen findings below.
 
 Every finding was reproduced by execution. None is inferred from reading alone,
 and the probe output is quoted where it is the evidence.
 
 ## 2. Findings
 
-All fourteen are closed. Each behavioural fix carries a regression test that
+All sixteen are closed. Each behavioural fix carries a regression test that
 was **run against the unfixed code and observed to fail**, not merely to pass
 once repaired.
 
@@ -41,6 +40,8 @@ once repaired.
 | F-012 | `ruff` selects neither security nor logging rule sets | Low | `S` and `G` added |
 | F-013 | `User: AbstractUser = get_user_model()` annotates a class as an instance | Low | `type[AbstractUser]` |
 | F-014 | Two docstrings describe behaviour that was deleted, plus two typos | Low | Rewritten |
+| **F-015** | Throttled endpoints return `500` in any host that does not declare the `sensitive` rate | **Blocking** | The app supplies the rate; the host may still override |
+| F-016 | `JWTAuthentication` is required for bearer clients and was not stated | Medium | Added to *Host requirements* |
 
 ### 2a · Why F-002 is documented rather than fixed
 
@@ -54,6 +55,21 @@ starting with the `critical` decryption failure. The check that would enforce
 it does not exist, because a host may legitimately route those records through
 the root logger, and a warning that fires on a correct configuration teaches
 people to ignore warnings.
+
+### 2b · F-015 and F-016 came from the integration run, not from reading
+
+Both were invisible to this app's own suite, and would have stayed invisible.
+The test harness declares `DEFAULT_THROTTLE_RATES["sensitive"]`, so every
+throttled endpoint passed here while returning `500` in a real project —
+`ScopedRateThrottle` raises `ImproperlyConfigured` for an unknown scope, on the
+first request that reaches the endpoint. The harness likewise configures DRF
+authentication, hiding that a host must enable `JWTAuthentication` for any
+bearer client to get past `403`.
+
+A harness is a stand-in host, and a stand-in host that is too helpful conceals
+exactly the requirements it exists to expose. That is the argument for the
+vendoring step being a gate rather than a formality: it is the only check that
+runs the app somewhere the harness did not set the table.
 
 ---
 

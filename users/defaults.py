@@ -20,6 +20,10 @@ VERIFICATION_OTP_TTL_MINUTES_DEFAULT = 15
 #: Label shown beside the account in the user's authenticator application.
 TWO_FACTOR_ISSUER_NAME_DEFAULT = "Django"
 
+#: Rate for the `sensitive` throttle scope, applied to registration,
+#: verification and re-authentication.
+SENSITIVE_THROTTLE_RATE_DEFAULT = "5/minute"
+
 
 def step_up_window_seconds() -> int:
     """Return the configured step-up window, in seconds.
@@ -69,3 +73,16 @@ def two_factor_issuer_name() -> str:
             TWO_FACTOR_ISSUER_NAME_DEFAULT,
         )
     )
+
+
+def sensitive_throttle_rate() -> str:
+    """Return the rate for the `sensitive` throttle scope.
+
+    Read from the host's DRF configuration when present, so a project that
+    declares `DEFAULT_THROTTLE_RATES["sensitive"]` keeps control of it.
+
+    Returns:
+        str: A DRF rate string such as `"5/minute"`.
+    """
+    rates = getattr(settings, "REST_FRAMEWORK", {}).get("DEFAULT_THROTTLE_RATES", {})
+    return str(rates.get("sensitive", SENSITIVE_THROTTLE_RATE_DEFAULT))
