@@ -8,7 +8,7 @@
 
 target-version = "py313"
 line-length = 100
-exclude = ["backend/scripts", "venv", "migrations", ".agents"]
+exclude = ["venv", "migrations", ".agents"]
 
 [lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "DTZ", "SIM", "PTH", "TD", "ERA", "PL", "RUF"]
@@ -30,10 +30,12 @@ ignore = [
 # These are namespaces evaluated once at class creation, not mutable defaults
 # shared between instances, and annotating them ClassVar contradicts the
 # documented style of both Django and DRF.
-"backend/apps/*/models/*.py" = ["RUF012"]
-"backend/apps/*/serializers/*.py" = ["RUF012"]
-"backend/apps/*/admin.py" = ["RUF012"]
-"backend/apps/*/views.py" = ["RUF012"]
+"users/models/*.py" = ["RUF012"]
+"users/serializers/*.py" = ["RUF012"]
+"users/admin.py" = ["RUF012"]
+"users/views.py" = ["RUF012"]
+# The harness is a settings module: Django requires these names at module level.
+"tests_harness/settings.py" = ["RUF012", "E501"]
 
 # The settings package chains `from .previous import *` so each module sees the
 # values the earlier ones produced — the standard Django split-settings shape.

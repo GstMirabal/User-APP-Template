@@ -1,7 +1,7 @@
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings_test"
-pythonpath = ["backend"]
-testpaths = ["backend"]
+DJANGO_SETTINGS_MODULE = "tests_harness.settings"
+pythonpath = ["."]
+testpaths = ["users"]
 python_files = ["test_*.py", "tests.py", "*_test.py"]
 addopts = "--strict-markers"
 
