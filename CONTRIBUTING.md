@@ -10,8 +10,8 @@ There is no project to run. This repository is the `users` package plus the
 tests that prove it.
 
 ```bash
-git clone --recurse-submodules https://github.com/GstMirabal/django-users-app.git
-cd django-users-app
+git clone --recurse-submodules https://github.com/GstMirabal/Django-Users-App.git
+cd Django-Users-App
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements-dev.txt
 

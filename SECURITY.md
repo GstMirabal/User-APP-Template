@@ -7,7 +7,7 @@ with what is specific to it.
 ## Reporting a vulnerability
 
 Report privately through **GitHub Security Advisories**: open the
-[Security tab](https://github.com/GstMirabal/django-users-app/security/advisories/new)
+[Security tab](https://github.com/GstMirabal/Django-Users-App/security/advisories/new)
 and choose *Report a vulnerability*. That keeps the report private until a fix
 exists.
 

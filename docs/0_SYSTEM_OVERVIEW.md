@@ -1,4 +1,4 @@
-# 🧭 System Overview: django-users-app
+# 🧭 System Overview: Django-Users-App
 **Last Audit Sprint**: #004
 **Last Audit Date**: 2026-08-02
 **Last Audit Commit SHA**: 81e62a7
@@ -9,7 +9,7 @@ This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` require
 
 ## 1. What this is
 
-**django-users-app** is a reusable Django application for identity and access management: custom user identity, encrypted personal data, TOTP two-factor authentication, GDPR anonymisation and brute-force protection.
+**Django-Users-App** is a reusable Django application for identity and access management: custom user identity, encrypted personal data, TOTP two-factor authentication, GDPR anonymisation and brute-force protection.
 
 **It is an app, not a project.** Since Sprint #004 this repository holds the `users` package and the tests that prove it, and nothing else — no `manage.py`, no settings module, no compose file. Everything a running system needs comes from the host project that installs it. [`Django-Pro-Template`](https://github.com/GstMirabal/Django-Pro-Template) is the scaffold it is developed and integration-tested against.
 

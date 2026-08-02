@@ -169,7 +169,7 @@ def test_two_factor_issuer_comes_from_the_host() -> None:
         uri = VerificationService.setup_2fa(user)["otp_uri"]
 
     assert "issuer=Acme%20Payments" in uri, uri
-    assert "User-APP" not in uri and "django-users-app" not in uri, (
+    assert not any(name in uri for name in ("User-APP", "django-users-app", "Django-Users-App")), (
         "the provisioning URI still carries this repository's name"
     )
 

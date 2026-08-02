@@ -1,4 +1,4 @@
-# 🗺️ Global Roadmap: django-users-app
+# 🗺️ Global Roadmap: Django-Users-App
 **Last Audit Sprint**: #004
 **Last Audit Date**: 2026-08-02
 **Last Audit Commit SHA**: 81e62a7
