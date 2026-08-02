@@ -8,7 +8,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
-_Nothing yet._
+### Sprint #004 closeout — framework findings returned upstream
+
+Documentation and governance only; nothing in `users/` changed.
+
+The five framework-class findings this sprint surfaced were drafted as
+contributions to the `.agents` nucleus rather than left in a local index
+(`agents.md §4 feedback_upstream`). Each row of the roadmap's upstream table
+now carries the pull request that closes it.
+
+One of them was recorded wrongly and is corrected: the secret scanner's pattern
+was said to be right, with the hook having never fired. The hook fired on every
+one of those commits and its pattern list matched none of them.
+
+#### Added
+- `.vale.ini` and `styles/Diataxis/`, so the prose gate runs in this repository
+  rather than only being named in a plan.
+- `docs/sprints/004-app-extraction/graph_stats.json` — the tracked snapshot the
+  freshness gate reads, which this sprint had not persisted.
 
 ## [2.0.1] - 2026-08-02
 
