@@ -74,6 +74,7 @@ scaffold being a gate rather than a formality.
 | :--- | ---: | ---: |
 | Source lines (app only) | 1872 | 2164 |
 | Tests | 85 (project) | 61 (app) + 79 (integrated) |
+| Vale findings on `docs/` | never run | 0 |
 | Scaffolding files duplicated with `Django-Pro-Template` | 15 | 0 |
 | Blocking findings open | 2 (unknown) | 0 |
 | Host requirements documented | 4 | 7 |
@@ -90,11 +91,25 @@ A project installing the app must supply what
 those are reported by `manage.py check` as `users.W001` and `users.W002`;
 the rest fail visibly or not at all.
 
-## 8. Deferred
+## 8. Where this sprint deviated from its plan
+
+Recorded rather than left implicit, because a plan silently not followed is
+worse than one openly amended.
+
+| Plan item | What happened |
+| :--- | :--- |
+| "Los 85 tests pasan desde el arnés nuevo" | 61. The 85 counted a complete project; the scaffolding tests left with the scaffolding they exercised. 61 is the count for what remains, and the integration run adds 79 against a real host. The figure in the plan was never reconciled at closeout, which is the actual defect here. |
+| Move `ADR-0001` (shared cache) to `Django-Pro-Template` | Kept. It is referenced from five places including `users/step_up.py`, and it justifies a requirement that is genuinely the app's: TOTP anti-replay needs cross-worker state. `Django-Pro-Template` instead gained its own `ADR-0005`, covering the different decision it actually makes — declaring a cache backend with a per-process fallback. |
+| Move `ADR-0003` (JWT signing key) to `Django-Pro-Template` | Marked `Superseded` here instead. Nothing in this repository configures JWT any more, and the reasoning moved to the contract. |
+| Move `CONFIG_BLUEPRINT.md` to `Django-Pro-Template` | The recovered document described this repository's old six-module settings package. `Django-Pro-Template` has a single `settings.py`, so a fresh blueprint was written against what that repository is. Copying the old one would have produced a confident, false document. |
+| Move `generate_secrets.py` to `Django-Pro-Template` | Rewritten there rather than copied: the original emitted `MASTER_KEY`, `ENCRYPTION_PEPPER` and a JWT signing key, and that template consumes none of them. |
+| Mark the repository as under restructuring before starting | Not done. It stayed advertised as `v1.0.0`, a complete project, throughout the sprint. |
+
+## 9. Deferred
 
 | Item | Why |
 | :--- | :--- |
 | P1-11 · key rotation | `MultiFernet` is the mechanism; it is a feature, not a fix, and warrants its own ADR |
 | P1-9 · code resend endpoint | Needs its own rate limiting; out of scope for an extraction sprint |
 | U-2, U-3 | Framework findings, drafted against `.agents` rather than fixed here |
-| Graph rebuild | `graphify-out/` still describes the pre-extraction tree; `graphify` is not installed locally |
+| `secrets*.py` absent from the graph | `graphify update` covers 40 of 43 files under `users/`; the three it misses are `models/secrets.py`, `serializers/secrets.py` and `tests/test_secrets.py`. An extractor quirk rather than a code defect, but it means graph coverage is not total |

@@ -8,14 +8,10 @@
     "onboarding_sprint": "000"
   },
   "current_sprint": {
-    "id": "004",
-    "slug": "004-app-extraction",
-    "status": "CLOSED",
-    "stack": "app",
-    "layer": "extraction",
+    "id": 4,
     "last_audit_sprint": 4,
-    "last_audit_date": "2026-08-01",
-    "last_audit_commit_sha": "4d7f9ef"
+    "last_audit_commit_sha": "b7bb710",
+    "status": "CLOSED"
   },
   "active_layer": "extraction",
   "active_app": "users",
@@ -72,5 +68,8 @@
     "ci": "GitHub Actions",
     "test_runner": "pytest + pytest-django against tests_harness/",
     "cache": "host must supply one shared across workers (contract requirement)"
-  }
+  },
+  "status": "SESSION_LOCKED",
+  "topology_version": 1,
+  "session_id": "015928f5-4ccb-4b7f-9adc-f6eec479489b"
 }

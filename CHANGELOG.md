@@ -8,6 +8,53 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 ## [Unreleased]
 
+### Sprint #004 closeout — framework findings returned upstream
+
+Documentation and governance only; nothing in `users/` changed.
+
+The five framework-class findings this sprint surfaced were drafted as
+contributions to the `.agents` nucleus rather than left in a local index
+(`agents.md §4 feedback_upstream`). Each row of the roadmap's upstream table
+now carries the pull request that closes it.
+
+One of them was recorded wrongly and is corrected: the secret scanner's pattern
+was said to be right, with the hook having never fired. The hook fired on every
+one of those commits and its pattern list matched none of them.
+
+#### Added
+- `.vale.ini` and `styles/Diataxis/`, so the prose gate runs in this repository
+  rather than only being named in a plan.
+- `docs/sprints/004-app-extraction/graph_stats.json` — the tracked snapshot the
+  freshness gate reads, which this sprint had not persisted.
+
+## [2.0.1] - 2026-08-02
+
+Documentation only. No code changed, and no behaviour with it.
+
+`v2.0.0` shipped a customization guide whose first command was
+`python backend/manage.py` — a path this repository deleted in the same sprint
+that produced the release, so a reader following it failed immediately. The
+blueprint likewise cited `backend/config/settings.py`,
+`backend/config/urls.py` and `backend/utils/encryption.py`, none of which it
+contains.
+
+Both were found by rebuilding the knowledge graph and checking every declared
+path against it — a step the Sprint #004 plan required and the closeout skipped.
+
+### Fixed
+- Stale paths in `USERS_BLUEPRINT.md`, `USERS_CUSTOMIZATION_GUIDE.md` and
+  `ADR-0003`.
+- Three Vale findings in `USERS_BLUEPRINT.md`: rationale stated inline in a
+  Reference document, where it belongs in an ADR. Vale had never been run,
+  despite being an exit criterion of the sprint that closed.
+
+### Added
+- `.vale.ini` and `styles/Diataxis/`, so the prose gate runs here rather than
+  only being named in a plan.
+- Sprint log §8, recording where Sprint #004 deviated from its plan and why.
+
+## [2.0.0] - 2026-08-01
+
 ### Sprint #004 — App / Extraction
 
 **This repository is no longer a Django project.** It is the `users`

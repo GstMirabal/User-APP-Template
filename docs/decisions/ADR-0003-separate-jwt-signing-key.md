@@ -33,7 +33,7 @@ Introduce a dedicated `JWT_SIGNING_KEY`, resolved from `config.toml` with an env
 
 When it is absent, fall back to `SECRET_KEY` and emit a warning rather than failing to boot. An existing deployment that upgrades this template must not be locked out by a new mandatory setting, and the fallback reproduces exactly the previous behaviour.
 
-`backend/utils/generate_secrets.py` emits the new key alongside the others, and `config.toml.example` carries the placeholder.
+The scaffolding's secret generator emitted the new key alongside the others, and `config.toml.example` carried the placeholder. Both left with the scaffolding in Sprint #004; see the note above.
 
 ## 3. Consequences
 

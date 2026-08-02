@@ -195,18 +195,20 @@ obliged to declare them.
 
 ## Contributing
 
-Contributions are welcome. See the
-[contribution guide](https://github.com/GstMirabal/.github/blob/main/CONTRIBUTING.md)
-for the workflow and what a reviewable change looks like.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
+workflow, and in particular for the trap that has already cost this repository
+two blocking defects: the test harness hides host requirements by being
+helpful.
 
 One rule worth repeating here: a bugfix should come with a test **checked to
 fail without the fix**, not only to pass with it. Several defects in this
 repository's history passed that second test while the first would have caught
 them.
 
-Security problems go through
-[private advisories](https://github.com/GstMirabal/.github/blob/main/SECURITY.md),
-never a public issue.
+Security problems go through [private advisories](SECURITY.md), never a public
+issue. That file also lists the limitations that are known and deliberate —
+chiefly that there is no key rotation path — so they need not be reported
+again.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

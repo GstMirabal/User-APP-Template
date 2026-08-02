@@ -52,7 +52,7 @@ Each row is independent. Work top to bottom; the later ones assume the earlier o
 
 ```bash
 # after deleting the model and the two fields from models/user.py
-python backend/manage.py makemigrations users && python backend/manage.py migrate
+python manage.py makemigrations users && python manage.py migrate
 ```
 
 ### 2.2 Profile presentation fields
@@ -119,10 +119,10 @@ python backend/manage.py makemigrations users && python backend/manage.py migrat
 After any removal:
 
 ```bash
-python backend/manage.py makemigrations users
-python backend/manage.py migrate
-python backend/manage.py check --fail-level WARNING   # includes core.E001
-make test
+python manage.py makemigrations users
+python manage.py migrate
+python manage.py check --fail-level WARNING   # includes users.W001 and users.W002
+pytest -q
 ```
 
 The admin-integrity check (`core.E001`) catches the most common mistake here: deleting a model field while leaving its name in a `ModelAdmin` or inline `fields` list. Django's own checks do not catch that, and the page fails with a 500 at request time instead.
