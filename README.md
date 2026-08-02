@@ -12,7 +12,7 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="docs/assets/logo/banner.svg" alt="django-users-app" width="100%">
+  <img src="docs/assets/logo/banner.svg" alt="Django-Users-App" width="100%">
 </div>
 
 <p align="center">
@@ -22,9 +22,9 @@
 <a href="docs/contracts/USERS_CONTRACT.md"><strong>Read the API contract »</strong></a>
 <br />
 ·
-<a href="https://github.com/GstMirabal/django-users-app/issues/new/choose">Report Bug</a>
+<a href="https://github.com/GstMirabal/Django-Users-App/issues/new/choose">Report Bug</a>
 ·
-<a href="https://github.com/GstMirabal/django-users-app/issues/new/choose">Request Feature</a>
+<a href="https://github.com/GstMirabal/Django-Users-App/issues/new/choose">Request Feature</a>
 </p>
 
 <!-- TABLE OF CONTENTS -->
@@ -108,7 +108,7 @@ or add this repository as a submodule and symlink the package — then install
 the dependencies it declares:
 
 ```bash
-git clone https://github.com/GstMirabal/django-users-app.git /tmp/users-app
+git clone https://github.com/GstMirabal/Django-Users-App.git /tmp/users-app
 cp -r /tmp/users-app/users your-project/
 pip install -r /tmp/users-app/requirements.txt
 ```
@@ -226,20 +226,20 @@ Gustavo Mirabal Suarez - gst.mirabal@gmail.com
 - GitHub: [@GstMirabal](https://github.com/GstMirabal)
 - Twitter: [@GstMirabal](https://x.com/gst_mirabal)
 
-Project Link: [https://github.com/GstMirabal/django-users-app](https://github.com/GstMirabal/django-users-app)
+Project Link: [https://github.com/GstMirabal/Django-Users-App](https://github.com/GstMirabal/Django-Users-App)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/django-users-app.svg?style=for-the-badge
-[contributors-url]: https://github.com/GstMirabal/django-users-app/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/GstMirabal/django-users-app.svg?style=for-the-badge
-[forks-url]: https://github.com/GstMirabal/django-users-app/network/members
-[stars-shield]: https://img.shields.io/github/stars/GstMirabal/django-users-app.svg?style=for-the-badge
-[stars-url]: https://github.com/GstMirabal/django-users-app/stargazers
-[issues-shield]: https://img.shields.io/github/issues/GstMirabal/django-users-app.svg?style=for-the-badge
-[issues-url]: https://github.com/GstMirabal/django-users-app/issues
+[contributors-shield]: https://img.shields.io/github/contributors/GstMirabal/Django-Users-App.svg?style=for-the-badge
+[contributors-url]: https://github.com/GstMirabal/Django-Users-App/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/GstMirabal/Django-Users-App.svg?style=for-the-badge
+[forks-url]: https://github.com/GstMirabal/Django-Users-App/network/members
+[stars-shield]: https://img.shields.io/github/stars/GstMirabal/Django-Users-App.svg?style=for-the-badge
+[stars-url]: https://github.com/GstMirabal/Django-Users-App/stargazers
+[issues-shield]: https://img.shields.io/github/issues/GstMirabal/Django-Users-App.svg?style=for-the-badge
+[issues-url]: https://github.com/GstMirabal/Django-Users-App/issues
 [license-shield]: https://img.shields.io/badge/license-MIT-blue.svg?style=for-the-badge
-[license-url]: https://github.com/GstMirabal/django-users-app/blob/main/LICENSE.txt
+[license-url]: https://github.com/GstMirabal/Django-Users-App/blob/main/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/gstmirabal/

@@ -5,7 +5,7 @@ authentication and encrypted personal data.
 
 This file travels with the package. If you are reading it inside a vendored
 copy, the full documentation lives at
-[GstMirabal/django-users-app](https://github.com/GstMirabal/django-users-app).
+[GstMirabal/Django-Users-App](https://github.com/GstMirabal/Django-Users-App).
 
 ## What is in here
 

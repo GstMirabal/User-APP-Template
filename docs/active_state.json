@@ -1,5 +1,5 @@
 {
-  "project_name": "django-users-app",
+  "project_name": "Django-Users-App",
   "governance": {
     "framework": ".agents",
     "pinned_version": "v4.2.1",
