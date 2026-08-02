@@ -1,7 +1,7 @@
 # 🧭 System Overview: django-users-app
 **Last Audit Sprint**: #004
-**Last Audit Date**: 2026-08-01
-**Last Audit Commit SHA**: 0a71a8c
+**Last Audit Date**: 2026-08-02
+**Last Audit Commit SHA**: b7bb710
 
 This is the **Documentation Entry Point**. `agents.md §0 (Entry Point)` requires every session to read this file before anything else. It is intentionally short — for the full component inventory, see `.agents/docs/architecture/topology_map.md`.
 
