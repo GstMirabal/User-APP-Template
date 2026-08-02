@@ -10,6 +10,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/) · Versioning: [SemVer](
 
 _Nothing yet._
 
+## [2.0.1] - 2026-08-02
+
+Documentation only. No code changed, and no behaviour with it.
+
+`v2.0.0` shipped a customization guide whose first command was
+`python backend/manage.py` — a path this repository deleted in the same sprint
+that produced the release, so a reader following it failed immediately. The
+blueprint likewise cited `backend/config/settings.py`,
+`backend/config/urls.py` and `backend/utils/encryption.py`, none of which it
+contains.
+
+Both were found by rebuilding the knowledge graph and checking every declared
+path against it — a step the Sprint #004 plan required and the closeout skipped.
+
+### Fixed
+- Stale paths in `USERS_BLUEPRINT.md`, `USERS_CUSTOMIZATION_GUIDE.md` and
+  `ADR-0003`.
+- Three Vale findings in `USERS_BLUEPRINT.md`: rationale stated inline in a
+  Reference document, where it belongs in an ADR. Vale had never been run,
+  despite being an exit criterion of the sprint that closed.
+
+### Added
+- `.vale.ini` and `styles/Diataxis/`, so the prose gate runs here rather than
+  only being named in a plan.
+- Sprint log §8, recording where Sprint #004 deviated from its plan and why.
+
 ## [2.0.0] - 2026-08-01
 
 ### Sprint #004 — App / Extraction
