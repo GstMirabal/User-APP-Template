@@ -19,8 +19,8 @@
 
 # Verified at both ends of this range: 5.2.16 (LTS) and 6.0.7. The floor also
 # clears the 5.2.15 advisory line.
-Django>=5.2.16,<7.0
-djangorestframework>=3.17
+Django>=6.0.7,<7.0
+djangorestframework>=3.17.1
 djangorestframework-simplejwt>=5.5.1
 
 # Floor raised past 7.x deliberately. Up to 6.5.1 the AXES_USERNAME_FORM_FIELD
@@ -30,13 +30,13 @@ djangorestframework-simplejwt>=5.5.1
 # `username=None` — see "Host requirements" in docs/contracts/USERS_CONTRACT.md.
 # Supporting both defaults at once would mean the requirement is conditional on
 # a version the host chooses, which is precisely the ambiguity worth removing.
-django-axes>=8.3
+django-axes>=8.3.1
 
 # Fernet encryption and HMAC blind indexing of every stored secret. The floor
 # is the first release clear of the advisories affecting the 46 and 48.0.0
 # lines — both of which the suite passes on, which is exactly why passing was
 # never sufficient grounds to floor there.
-cryptography>=48.0.1
+cryptography>=50.0.0
 
 # TOTP enrolment and verification.
 pyotp>=2.10
